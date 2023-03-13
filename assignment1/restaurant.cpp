@@ -2,6 +2,14 @@
 
 /*===================================================================================*/
 /*===================================================================================*/
+// declare some global variable using during the assignment
+table* update_changes = new table(0, "", 0, nullptr);
+table* after_merge = nullptr;
+/*===================================================================================*/
+/*===================================================================================*/
+
+/*===================================================================================*/
+/*===================================================================================*/
 // Some support function to read file
 // count how many words in this command
 int countWords(const string& str) {
@@ -262,13 +270,16 @@ void fillBlankTable(restaurant* r) {
     }
 }
 
+bool checkAge(restaurant* r, int NUM) {
+
+}
 int findIndex(restaurant* r, int NUM) {
     if(count_num(r) == 0) return 15;
     else {
         fillBlankTable(r);
         int index = 0, max_index = 0;
-        table* temp_table = r->recentTable->next;
-        for(int i = 1; i <= 15; i++) {
+        table* temp_table = r->recentTable;
+        for(int i = 1; i <= 16; i++) {
             if(temp_table->age < 0 && temp_table->next->age > 0 && abs(temp_table->age) >= NUM) {
                 if(temp_table->ID - NUM < 0) {
                     max_index = 16 + (temp_table->ID + temp_table->age);
@@ -282,13 +293,16 @@ int findIndex(restaurant* r, int NUM) {
             temp_table = temp_table->next;
         }
         return max_index;
+        temp_table = nullptr;
         delete temp_table;
     }
 }
 
+
+
 void deleteStupidAge(restaurant* r) {
     table* backup = r->recentTable;
-        for(int i = 1; i <= 15; i++) {
+        for(int i = 1; i <= 16; i++) {
             if(backup->age < 0) backup->age = 0;
             backup = backup->next;
         }
@@ -325,6 +339,33 @@ int getTableID(restaurant* r, int NUM) {
     }
 }
 
+bool isMergeForm(restaurant* r) {
+    table* temp_table = r->recentTable;
+    for(int i = 1; i <= 16; i++) {
+        if(abs(temp_table->ID - temp_table->next->ID) != 1) {
+            return 1;
+            break;
+        }
+    }
+    return 0;
+}
+
+void REGM(restaurant* r, restaurant* queue, restaurant* queueForPS, string NAME, int AGE, int NUM, table* merge) {
+    if(isMergeForm(r) && (countMaxEmpty(r) < NUM)) return;
+    int index = getTableID(r, NUM);
+    table* temp_table = r->recentTable;
+    while(temp_table->ID != index) temp_table = temp_table->next;
+    merge = temp_table;
+    table* var_table = temp_table;
+    for(int i = 1; i <= NUM; i++) var_table = var_table->next;
+    merge->next = var_table;
+    enqueue(queueForPS, NAME, AGE);
+
+    // temp_table = nullptr;
+    // var_table = nullptr;
+    // delete temp_table;
+    // delete var_table;
+}
 /*===================================================================================*/
 /*===================================================================================*/
 
