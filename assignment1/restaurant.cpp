@@ -387,7 +387,7 @@ int getTableID(restaurant* r, int NUM) {
 // }
 //, table* merge
 void REGM(restaurant* r, restaurant* queue, restaurant* queueForPS, string NAME, int AGE, int NUM, table* forPT) {
-    if(isMergeForm(r) && (countMaxEmpty(r) < NUM)) return;
+    if(isMergeForm(r) || (countMaxEmpty(r) < NUM)) return;
     int index = getTableID(r, NUM);
     table* temp_table = r->recentTable;
     while(temp_table->ID != index) temp_table = temp_table->next;
@@ -438,51 +438,85 @@ void removeAt(restaurant* queue, string NAME, int AGE) {
     temp_table->name = "";
     temp_table->age = 0;
 }
-void CLE(restaurant* r, restaurant* queue, int ID, table* forPT) {
+
+void pushTable(restaurant* r, restaurant* q, table* forPT) {
+    int start_id = 0;
+    if(isMergeForm(r)) {
+        table* temp_table = r->recentTable->next;
+
+        if(end_merge_at - start_merge_at > 0) start_id = 1;
+        else if(end_merge_at - start_merge_at < 0) start_id = end_merge_at;
+
+        while(temp_table->ID != start_id) temp_table  = temp_table->next;
+        while(temp_table->age != 0) temp_table = temp_table->next;
+        temp_table->name = q->recentTable->next->name;
+        temp_table->age = q->recentTable->next->age;
+
+        forPT->name = q->recentTable->next->name;
+        forPT->age = temp_table->ID;
+        dequeue(q);
+        //cout << "ban moi duoc them khach: " << ID << endl;
+
+    }
+    else {
+        table* temp_table = r->recentTable->next;
+        while(temp_table->age != 0) temp_table = temp_table->next;
+        temp_table->name = q->recentTable->next->name;
+        temp_table->age = q->recentTable->next->age;
+
+        forPT->name = q->recentTable->next->name;
+        forPT->age = temp_table->ID;
+        dequeue(q);
+    }
+
+}
+
+void CLE(restaurant* r, restaurant* q, restaurant* queue, int ID, table* forPT) {
     string name;
     int age;
     table* temp_table = r->recentTable;
-    if(isMergeForm(r)) {
-        while(temp_table->ID != start_merge_at) temp_table = temp_table->next;
-        table* del_info = temp_table;
-        temp_table = temp_table->next;
-        while(temp_table->ID != end_merge_at) {
-            if(ID == temp_table->ID) {
-                return;
-            }
-        }
-        name = del_info->name;
-        age = del_info->age;
-        
-        if(ID == start_merge_at) {
-            del_info->name = "";
-            del_info->age = 0;
-            del_info->next = after_merge;
-
-            start_merge_at = 0;
-            end_merge_at = 0;
-            size_merge = 0;
-        }
-        else {
-            del_info->name = "";
-            del_info->age = 0;
-
-        }
-    }
-    else {
+    
+    if(!isMergeForm(r)) {
         while(temp_table->ID != ID) temp_table = temp_table->next;
-        if(temp_table->age == 0) return;
+
         name = temp_table->name;
         age = temp_table->age;
+
         temp_table->name = "";
         temp_table->age = 0;
+
+        removeAt(queue, name, age);
     }
-    //addAfterDel(r,queue);
+    else {
+        if(end_merge_at - start_merge_at < 0) {
+            if(ID < end_merge_at || ID > start_merge_at) return;
+        }
+        if(end_merge_at - start_merge_at > 0) {
+            if(ID < end_merge_at && ID > start_merge_at) return;
+        }
+        if(ID == start_merge_at) {
+            while(temp_table->ID != start_merge_at) temp_table = temp_table->next;
+            temp_table->name = "";
+            temp_table->age = 0;
+            temp_table->next = after_merge;
+        }
+        else {
+            while(temp_table->ID != ID) temp_table = temp_table->next;
+
+            name = temp_table->name;
+            age = temp_table->age;
+
+            temp_table->name = "";
+            temp_table->age = 0;
+
+            removeAt(queue, name, age);
+        }
+    }
     forPT->name = name;
     forPT->age = ID;
-    // updateRes(r,queue);
-    removeAt(queue, name, age);
-    
+    while(!is_full(r) && count_num(q) > 0) {
+        pushTable(r,q,forPT);
+    }
 }
 
 /*===================================================================================*/
@@ -621,6 +655,19 @@ void PQ(restaurant* queue, int NUM) {
 /*===================================================================================*/
 
 /*===================================================================================*/
+/*============================== 2.2.6. SIXTH REQUEST ============================*/
+void PT(restaurant* r, table* forPT) {
+    table* temp_table = r->recentTable;
+    while(temp_table->ID != forPT->age) temp_table = temp_table->next;
+    for(int i = 1; i <= (16 - size_merge); i++) {
+        if(temp_table->age != 0) cout << temp_table->ID << "-" << temp_table->name << endl;
+        temp_table = temp_table->next;
+    }
+}
+/*===================================================================================*/
+/*===================================================================================*/
+
+/*===================================================================================*/
 /*============================== 2.2.7. SENVENTH REQUEST ============================*/
 void swapInfo(table* p, table* q) {
     string NAME = p->name;
@@ -752,7 +799,7 @@ void simulate(string filename, restaurant* r)
                 if(checkInt(str_ID)) {
                     int ID = stoi(str_ID);
                     if(ID >= 1 && ID <= MAXSIZE) {
-                        CLE(r, queueForPS, ID, update_changes);
+                        CLE(r, q, queueForPS, ID, update_changes);
                     }
                 }
             }
@@ -788,6 +835,9 @@ void simulate(string filename, restaurant* r)
             }
             else continue;
         }
+        else if(command == "PT") {// check some necessary condition before implement request 
+            PT(r, update_changes);
+        }
         else if(command == "SQ") {// check some necessary condition before implement request 
             if(length == 2) {
                 string str_NUM = firstWord(removeFirst(newline));
@@ -802,47 +852,16 @@ void simulate(string filename, restaurant* r)
         }
         else continue;
     }
-
-    // table* temp = queueForPS->recentTable->next;
-    // for(int i = 1; i <= 30; i++) {
-    //     cout << "NAME: " << temp->name << " " << "AGE: " << temp->age << " " << " ID: " << temp->ID << endl;
-    //     temp = temp->next;
-    // }
+    dequeue(q);
+    table* temp = r->recentTable->next;
+    for(int i = 1; i <= 15; i++) {
+        cout << "NAME: " << temp->name << " " << "AGE: " << temp->age << " " << " ID: " << temp->ID << endl;
+        temp = temp->next;
+    }
+    cout << "ban moi thay doi gan day la: " << update_changes->age << " " << update_changes->name << endl;
+    cout << count_num(r) <<  ""  << is_full(r) <<endl;
     delete q;
     delete queueForPS;
     delete update_changes;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // IMPLEMENT THE SQ FUNCTION FOR SORTING THE QUEUE  
-// // swap info of two table
-// void swapInfo(table* guest1, table* guest2) {
-//         string temp_name = guest1->name;
-//         int temp_age = guest1->age;
-
-//         guest1->name = guest2->name;
-//         guest1->age = guest2->age;
-
-//         guest2->name = temp_name;
-//         guest2->age = temp_age;
-// }
-
