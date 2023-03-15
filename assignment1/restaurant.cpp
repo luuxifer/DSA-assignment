@@ -3,8 +3,9 @@
 /*===================================================================================*/
 /*===================================================================================*/
 // declare some global variable using during the assignment
-table* update_changes = new table(0, "", 0, nullptr);
+
 table* after_merge = nullptr;
+int start_merge_at = 0, end_merge_at = 0, size_merge = 0;
 /*===================================================================================*/
 /*===================================================================================*/
 
@@ -87,25 +88,69 @@ bool checkDuplicate(string str) {
 
 /*===================================================================================*/
 /*============================== 2.2.1. FIRST REQUEST ===============================*/
+bool isMergeForm(restaurant* r) {
+    table* temp_table = r->recentTable;
+    int count = 0;
+    for(int i = 1; i <= 15; i++) {
+        if(abs(temp_table->ID - temp_table->next->ID) == 1 || abs(temp_table->ID - temp_table->next->ID) == 14) {
+            count++;
+        }
+        temp_table = temp_table->next;
+    }
+    if(count == 15) return 0;
+    return 1;
+
+    temp_table = nullptr;
+    delete temp_table;
+}
+
+int count_num_mergeForm(restaurant* r) {
+    table* temp_table = r->recentTable;
+    int count = 0;
+    while(temp_table->ID != end_merge_at) temp_table = temp_table->next;
+    
+    for(int i = 1; i <= (16 - size_merge); i++) {
+            if(temp_table->age >= 1 && temp_table->age <= 115) {
+                count++;
+            }
+            temp_table = temp_table->next;
+    }
+    return count;
+
+    temp_table = nullptr;
+    delete temp_table;
+}
 // count the number of customers in queue
 int count_num(restaurant* r) {
     int max_size = r->recentTable->ID;
     table* temp_table = r->recentTable->next;
     int count = 0;
-    for(int i = 1; i <= max_size; i++) {
-        if(temp_table->age >= 1 && temp_table->age <= 115) {
-            count++;
+    if(isMergeForm(r)) {
+        count = count_num_mergeForm(r);
+    }
+    else {
+        for(int i = 1; i <= max_size; i++) {
+            if(temp_table->age >= 1 && temp_table->age <= 115) {
+                count++;
+            }
+            temp_table = temp_table->next;
         }
-        temp_table = temp_table->next;
     }
     return count;
+
+    temp_table = nullptr;
     delete temp_table;
 }
 
+
+
 // check if the restaurant if full?
 bool is_full(restaurant* r) {
+    if(isMergeForm(r)) {
+        if(count_num(r) == (16 - size_merge)) return 1;
+    }
     if(count_num(r) == 15) return 1;
-    else return 0;
+    return 0;
 }
 
 // update a new customer to the queue
@@ -120,6 +165,9 @@ void enqueue(restaurant* r, string NAME, int AGE) {
         }
         temp = temp->next;
     }
+
+    temp = nullptr;
+    delete temp;
 }
 
 void dequeue(restaurant* queue) {
@@ -132,6 +180,9 @@ void dequeue(restaurant* queue) {
     }
     del->name = "";
     del->age = 0;
+
+    del = nullptr;
+    delete del;
 }
 // pop the first customer from the queue
 void updateRes(restaurant* r, restaurant* queue) {
@@ -143,9 +194,10 @@ void updateRes(restaurant* r, restaurant* queue) {
         addInfo->age = del->age;
         dequeue(queue);
     }
+
 }
 
-void REG(restaurant* r, restaurant* queue, restaurant* queueForPS, int ID, string NAME, int AGE) {
+void REG(restaurant* r, restaurant* queue, restaurant* queueForPS, int ID, string NAME, int AGE, table* forPT) {
     if(is_full(r)) { // if restaurant is full, add the customer to the queue
         if(is_full(queue)) return;
         else {
@@ -176,10 +228,15 @@ void REG(restaurant* r, restaurant* queue, restaurant* queueForPS, int ID, strin
                     temp_table->age = AGE;
                 }
             }
+            forPT->name = NAME;
+            forPT->age = temp_table->ID;
         }
     }
     enqueue(queueForPS, NAME, AGE);
+    
+    
 }
+
 /*===================================================================================*/
 /*===================================================================================*/
 
@@ -221,29 +278,7 @@ int countMaxEmpty(restaurant* r) {
     return max_len;
 }
 
-int countEmptyChain(restaurant* r, int NUM) {
-    table* start = r->recentTable;
-    while(start->ID != getFirstNotEmpty(r)) start = start->next;
-    int max_len = 0, cur_len = 0, count_chain = 0;
-    table* temp_table = start;
 
-    for(int i = 1; i <= 15; i++) {
-        if (temp_table->age != 0) {
-            if(cur_len)
-            cur_len = 0;
-            temp_table = temp_table->next;
-        } else {
-            cur_len++;
-            temp_table = temp_table->next;
-        }
-
-        if (cur_len > max_len) {
-            max_len = cur_len;
-        }
-    }
-
-    return max_len;
-}
 // điền chuỗi số âm vào age , tìm ra node bắt đầu thỏa mãn yêu cầu hàm regm
 void fillBlankTable(restaurant* r) {
     table* start = r->recentTable->next;
@@ -270,9 +305,6 @@ void fillBlankTable(restaurant* r) {
     }
 }
 
-bool checkAge(restaurant* r, int NUM) {
-
-}
 int findIndex(restaurant* r, int NUM) {
     if(count_num(r) == 0) return 15;
     else {
@@ -328,47 +360,133 @@ int getTableID(restaurant* r, int NUM) {
     int start = findIndex(r, NUM);
     int length = emptyChainLength(r, NUM);
     int sum = (start + length - 1);
+    int countID = 0;
     if(sum <= 15) {
-        return (start + (length - NUM));
+
+        countID = (start + (length - NUM));
     }
     else if(sum > 15) {
         int len_first_half = 15 - start + 1;
         int len_second_half = length - len_first_half;
-        if(len_second_half >= NUM) return 15;
-        else return (start + (length - len_second_half));
+
+        if(len_second_half >= NUM) countID = 15;
+        else countID = (start + (length - len_second_half));
     }
+    return countID;
 }
 
-bool isMergeForm(restaurant* r) {
-    table* temp_table = r->recentTable;
-    for(int i = 1; i <= 16; i++) {
-        if(abs(temp_table->ID - temp_table->next->ID) != 1) {
-            return 1;
-            break;
-        }
-    }
-    return 0;
-}
-
-void REGM(restaurant* r, restaurant* queue, restaurant* queueForPS, string NAME, int AGE, int NUM, table* merge) {
+// bool isMergeForm(restaurant* r) {
+//     table* temp_table = r->recentTable;
+//     for(int i = 1; i <= 16; i++) {
+//         if(abs(temp_table->ID - temp_table->next->ID) != 1) {
+//             return 1;
+//             break;
+//         }
+//     }
+//     return 0;
+// }
+//, table* merge
+void REGM(restaurant* r, restaurant* queue, restaurant* queueForPS, string NAME, int AGE, int NUM, table* forPT) {
     if(isMergeForm(r) && (countMaxEmpty(r) < NUM)) return;
     int index = getTableID(r, NUM);
     table* temp_table = r->recentTable;
     while(temp_table->ID != index) temp_table = temp_table->next;
-    merge = temp_table;
+    temp_table->name = NAME;
+    temp_table->age = AGE;
+
+    forPT->name = NAME;
+    forPT->age = temp_table->ID;
+    start_merge_at = temp_table->ID;
+
+    after_merge = temp_table->next;
     table* var_table = temp_table;
     for(int i = 1; i <= NUM; i++) var_table = var_table->next;
-    merge->next = var_table;
+
+    temp_table->next = var_table;
+    end_merge_at = var_table->ID;
+    size_merge = NUM;
+
     enqueue(queueForPS, NAME, AGE);
 
-    // temp_table = nullptr;
-    // var_table = nullptr;
-    // delete temp_table;
-    // delete var_table;
+    temp_table = nullptr;
+    var_table = nullptr;
+    delete temp_table;
+    delete var_table;
 }
 /*===================================================================================*/
 /*===================================================================================*/
 
+/*===================================================================================*/
+/*============================== 2.2.3. THIRD REQUEST ===============================*/
+//CLE
+void addAfterDel(restaurant* r, restaurant* queue) {
+    if(count_num(queue) == 0) return;
+    updateRes(r,queue);
+}
+
+void removeAt(restaurant* queue, string NAME, int AGE) {
+    table* temp_table = queue->recentTable->next;
+    for(int i = 1; i <= 30; i++) {
+        if(temp_table->name == NAME && temp_table->age == AGE) break;
+        temp_table = temp_table->next;
+    }
+    while(temp_table->next->age != 0) {
+        temp_table->name = temp_table->next->name;
+        temp_table->age = temp_table->next->age;
+        temp_table = temp_table->next;
+    }
+    temp_table->name = "";
+    temp_table->age = 0;
+}
+void CLE(restaurant* r, restaurant* queue, int ID, table* forPT) {
+    string name;
+    int age;
+    table* temp_table = r->recentTable;
+    if(isMergeForm(r)) {
+        while(temp_table->ID != start_merge_at) temp_table = temp_table->next;
+        table* del_info = temp_table;
+        temp_table = temp_table->next;
+        while(temp_table->ID != end_merge_at) {
+            if(ID == temp_table->ID) {
+                return;
+            }
+        }
+        name = del_info->name;
+        age = del_info->age;
+        
+        if(ID == start_merge_at) {
+            del_info->name = "";
+            del_info->age = 0;
+            del_info->next = after_merge;
+
+            start_merge_at = 0;
+            end_merge_at = 0;
+            size_merge = 0;
+        }
+        else {
+            del_info->name = "";
+            del_info->age = 0;
+
+        }
+    }
+    else {
+        while(temp_table->ID != ID) temp_table = temp_table->next;
+        if(temp_table->age == 0) return;
+        name = temp_table->name;
+        age = temp_table->age;
+        temp_table->name = "";
+        temp_table->age = 0;
+    }
+    //addAfterDel(r,queue);
+    forPT->name = name;
+    forPT->age = ID;
+    // updateRes(r,queue);
+    removeAt(queue, name, age);
+    
+}
+
+/*===================================================================================*/
+/*===================================================================================*/
 
 /*===================================================================================*/
 /*============================== 2.2.4. FOURTH REQUEST ===============================*/
@@ -417,16 +535,37 @@ void reverseCircularLinkedList(restaurant* queue){
     }
 }
 
-// main function to implement fourth request
-void PS(restaurant* queue, int NUM) {
-    reverseCircularLinkedList(queue);
-
+void push_info(restaurant* queue) {
     table* temp_table = queue->recentTable->next;
-    int total = count_num(queue);
-    // if total of customer in the meantime = 0 print the notice "empty"
+    table* var_table = temp_table;
+    while(var_table->age == 0) var_table = var_table->next;
+    while(var_table->ID != 1) {
+        temp_table->name = var_table->name;
+        temp_table->age = var_table->age;
+
+        var_table->name = "";
+        var_table->age = 0;
+
+        temp_table = temp_table->next;
+        var_table = var_table->next;
+    }
+}
+int count_queuePS(restaurant* queue) {
+    table* temp_table = queue->recentTable->next;
+    while(temp_table->name != "") temp_table = temp_table->next;
+    return temp_table->ID - 1;
+
+}
+void PS(restaurant* queue, int NUM) {
+    table* temp_table = queue->recentTable->next;
+    int total = count_queuePS(queue);
+
+    reverseCircularLinkedList(queue);
+    push_info(queue);
+    
+    
     if(total == 0) cout << "Empty\n";
-    else { // if total > 0 
-        // if NUM argument is ambuguos or (> total && < 30) print all the queue
+    else {
         if(NUM == 0 || (NUM > total && NUM <= 2*MAXSIZE)) {
             while(temp_table->age == 0) temp_table = temp_table->next;
             for(int i = 1; i <= total; i++) {
@@ -434,7 +573,6 @@ void PS(restaurant* queue, int NUM) {
                 temp_table = temp_table->next;
             }
         }
-        // if < total print the NUM latest customer went to the restaurant
         else if(NUM <= total) {
             while(temp_table->age == 0) temp_table = temp_table->next;
             for(int i = 1; i <= NUM; i++) {
@@ -443,6 +581,8 @@ void PS(restaurant* queue, int NUM) {
             }
         }
     }
+    reverseCircularLinkedList(queue);
+    push_info(queue);
 }
 /*===================================================================================*/
 /*===================================================================================*/
@@ -555,6 +695,8 @@ void simulate(string filename, restaurant* r)
         queueForPS->recentTable = queueForPS->insert(queueForPS->recentTable,i,"",0);
     }
 
+    table* update_changes = new table(0, "", 0, nullptr);
+
     // initialize a word to read file
     string line;
     while(!input_file.eof()) {
@@ -570,8 +712,8 @@ void simulate(string filename, restaurant* r)
                 string str_AGE = firstWord(removeFirst(removeFirst(newline)));
                 if(checkInt(str_AGE)) {
                     int AGE = stoi(str_AGE);
-                    if(AGE >= 1 && AGE <= 115) {
-                        REG(r, q, queueForPS, 0, NAME, AGE);
+                    if(AGE >= 16 && AGE <= 115) {
+                        REG(r, q, queueForPS, 0, NAME, AGE, update_changes);
                     }
                 }
             }
@@ -582,8 +724,8 @@ void simulate(string filename, restaurant* r)
                 if(checkInt(str_AGE) && checkInt(str_ID)) {
                     int ID = stoi(str_ID);
                     int AGE = stoi(str_AGE);
-                    if(AGE >= 1 && AGE <= 115 && ID >=1 && ID <= MAXSIZE) {
-                        REG(r, q, queueForPS, ID, NAME, AGE);
+                    if(AGE >= 16 && AGE <= 115 && ID >=1 && ID <= MAXSIZE) {
+                        REG(r, q, queueForPS, ID, NAME, AGE, update_changes);
                     }
                 }
             }
@@ -597,8 +739,8 @@ void simulate(string filename, restaurant* r)
                 if(checkInt(str_AGE) && checkInt(str_NUM)) {
                     int AGE = stoi(str_AGE);
                     int NUM = stoi(str_NUM);
-                    if(AGE >= 1 && AGE <= 115 && NUM >=1 && NUM <= MAXSIZE) {
-                        cout << "regm" << " " << NAME << " " << AGE << " " << NUM << endl;
+                    if(AGE >= 16 && AGE <= 115 && NUM >=1 && NUM <= MAXSIZE) {
+                        REGM(r, q, queueForPS, NAME, AGE, NUM, update_changes);
                     }
                 }
             }
@@ -610,7 +752,7 @@ void simulate(string filename, restaurant* r)
                 if(checkInt(str_ID)) {
                     int ID = stoi(str_ID);
                     if(ID >= 1 && ID <= MAXSIZE) {
-                        cout << "cle" << " " << ID << endl;
+                        CLE(r, queueForPS, ID, update_changes);
                     }
                 }
             }
@@ -618,14 +760,14 @@ void simulate(string filename, restaurant* r)
         }
         else if(command == "PS") {// check some necessary condition before implement request 
             if(length == 1) {
-                cout << "ps" << " " << 0 << endl;
+                PS(queueForPS, 0);
             }
             else if(length == 2) {
                 string str_NUM = firstWord(removeFirst(newline));
                 if(checkInt(str_NUM)) {
                     int NUM = stoi(str_NUM);
                     if(NUM >= 1 && NUM <= (2*MAXSIZE)) {
-                        cout << "ps" << " " << NUM << endl;
+                        PS(queueForPS, NUM);
                     }
                 }
             }
@@ -633,14 +775,14 @@ void simulate(string filename, restaurant* r)
         }
         else if(command == "PQ") {// check some necessary condition before implement request 
             if(length == 1) {
-                cout << "pq" << " " << 0 << endl;
+                PQ(q, 0);
             }
             else if(length == 2) {
                 string str_NUM = firstWord(removeFirst(newline));
                 if(checkInt(str_NUM)) {
                     int NUM = stoi(str_NUM);
                     if(NUM >= 1 && NUM <= MAXSIZE) {
-                        cout << "pq" << " " << NUM << endl;
+                        PQ(q, NUM);
                     }
                 }
             }
@@ -652,7 +794,7 @@ void simulate(string filename, restaurant* r)
                 if(checkInt(str_NUM)) {
                     int NUM = stoi(str_NUM);
                     if(NUM >= 1 && NUM <= MAXSIZE) {
-                        cout << "sq" << " " << NUM << endl;
+                        SQ(q, NUM);
                     }
                 }
             }
@@ -660,16 +802,16 @@ void simulate(string filename, restaurant* r)
         }
         else continue;
     }
-    table* temp = r->recentTable->next;
-    for (int i = 1; i <= MAXSIZE; i++)
-    {
-        cout << temp->ID << " " << temp->name << " " << temp->age << " " << endl;
-        temp = temp->next;
-    }
-    cout << count_num(r) << " " << is_full(r);
+
+    // table* temp = queueForPS->recentTable->next;
+    // for(int i = 1; i <= 30; i++) {
+    //     cout << "NAME: " << temp->name << " " << "AGE: " << temp->age << " " << " ID: " << temp->ID << endl;
+    //     temp = temp->next;
+    // }
     delete q;
     delete queueForPS;
-    
+    delete update_changes;
+
 }
 
 
