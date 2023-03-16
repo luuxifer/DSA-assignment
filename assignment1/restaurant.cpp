@@ -355,17 +355,18 @@ int findIndex(restaurant* r, int NUM) {
     else {
         fillBlankTable(r);
         int index = 0, max_index = 0;
-        table* temp_table = r->recentTable;
-        for(int i = 1; i <= 16; i++) {
+        table* temp_table = r->recentTable->next;
+        for(int i = 1; i <= 15; i++) {
             if(temp_table->age < 0 && temp_table->next->age > 0 && abs(temp_table->age) >= NUM) {
-                if(temp_table->ID - NUM < 0) {
+                if(temp_table->ID + temp_table->age < 0) {
                     max_index = 16 + (temp_table->ID + temp_table->age);
                     break;
                 }
-                else {
+                else if(temp_table->ID - NUM > 0){
                     index = 1 + (temp_table->ID + temp_table->age);
                     if(index > max_index) max_index = index;
                 }
+                else return 1;
             }
             temp_table = temp_table->next;
         }
@@ -704,12 +705,15 @@ void PT(restaurant* r, table* forPT) {
 void swapInfo(table* p, table* q) {
     string NAME = p->name;
     int AGE = p->age;
+    int ID = p->ID;
 
     p->name = q->name;
     p->age = q->age;
+    p->ID = q->ID;
 
     q->name = NAME;
     q->age = AGE;
+    q->ID = ID;
 }
 
 void rewriteRes(restaurant* queue, restaurant* queueForPQ) {
@@ -750,6 +754,28 @@ void rewriteRes(restaurant* queue, restaurant* queueForPQ) {
 
 }
 
+void sortSameAge(restaurant* q, int waiting) {
+    table* temp_table = q->recentTable->next;
+    int min_index = temp_table->ID;
+    for(int i = 1; i <= waiting; i++) {
+        
+        table* var_table = temp_table->next;
+        table* forswap = temp_table;
+        for(int j = i + 1; j <= waiting; j++) {
+            if(var_table->age == temp_table->age && var_table->ID < temp_table->ID) min_index = var_table->ID;
+            var_table = var_table->next;
+        }
+        for(int i = 1; i <= waiting; i++) {
+            if(forswap->ID == min_index) {
+                swapInfo(forswap, temp_table);
+                break;
+            }
+            forswap = forswap->next;
+        }
+        temp_table = temp_table->next;
+    }
+}
+
 void SQ(restaurant* q, restaurant* queueForPQ, int NUM) {
     rewriteRes(q, queueForPQ);
     int waiting = count_num(q);
@@ -758,10 +784,10 @@ void SQ(restaurant* q, restaurant* queueForPQ, int NUM) {
     // case 2: only need to sort fisrt NUM oldest customers
     else if(NUM <= waiting) {
         table* flag = q->recentTable->next;   
-        while(flag->ID <= NUM) {
+        for(int i = 1; i <= NUM; i++) {
             table* var = flag;
             table* current = flag->next; 
-            while(current->ID <= waiting) {
+            for(int j = i + 1; j <= waiting; j++) {
                 if(current->age > var->age) var = current;
                 current = current->next;
             }
@@ -771,11 +797,12 @@ void SQ(restaurant* q, restaurant* queueForPQ, int NUM) {
     }
     //case 3: sort all the customer in queue 
     else if(NUM > waiting && NUM <= MAXSIZE) {
+        cout << "dang sort ca dong" << endl;
         table* flag = q->recentTable->next;   
-        while(flag->ID <= waiting) {
+        for(int i = 1; i <= waiting; i++) {
             table* var = flag;
             table* current = flag->next; 
-            while(current->ID <= waiting) {
+            for(int j = i + 1; j <= waiting; j++) {
                 if(current->age > var->age) var = current;
                 current = current->next;
             }
@@ -783,7 +810,15 @@ void SQ(restaurant* q, restaurant* queueForPQ, int NUM) {
             flag = flag->next;
         }
     }
+
+    sortSameAge(q, waiting);
     table* print = q->recentTable->next;
+    for(int i = 1; i <= 15; i++) {
+        print->ID = i;
+        print = print->next;
+    }
+
+    print = q->recentTable->next;
     for(int i = 1; i <= waiting; i++) {
         cout << print->name << "\n";
         print = print->next;
@@ -791,6 +826,7 @@ void SQ(restaurant* q, restaurant* queueForPQ, int NUM) {
 }
 /*===================================================================================*/
 /*===================================================================================*/
+
 void simulate(string filename, restaurant* r)
 {
     //  check if the input file is read
