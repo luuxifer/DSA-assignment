@@ -705,21 +705,63 @@ void PT(restaurant* r, table* forPT) {
 void swapInfo(table* p, table* q) {
     string NAME = p->name;
     int AGE = p->age;
-    int ID = p->ID;
+    //int ID = p->ID;
 
     p->name = q->name;
     p->age = q->age;
-    p->ID = q->ID;
+    //p->ID = q->ID;
 
     q->name = NAME;
     q->age = AGE;
-    q->ID = ID;
+    //q->ID = ID;
 }
+
+void updatePQ(restaurant* queueForPQ) {
+    int num_in_queueForPQ = count_num(queueForPQ);
+    table* temp = queueForPQ->recentTable->next;
+    if(num_in_queueForPQ == 0) return;
+    
+    if(temp->age != 0) {
+        for(int i = 1; i < num_in_queueForPQ; i++) {
+            table* flag = temp->next;
+            while(temp->age != 0) temp = temp->next;
+            while(flag->age == 0) flag = flag->next;
+
+            temp->name = flag->name;
+            temp->age = flag->age;
+
+            flag->name = "";
+            flag->age = 0;
+        }
+    }
+    else {
+        for(int i = 1; i <= num_in_queueForPQ; i++) {
+            table* flag = temp->next;
+            while(temp->age != 0) temp = temp->next;
+            while(flag->age == 0) flag = flag->next;
+
+            temp->name = flag->name;
+            temp->age = flag->age;
+
+            flag->name = "";
+            flag->age = 0;
+        }
+    }
+}
+
 
 void rewriteRes(restaurant* queue, restaurant* queueForPQ) {
     int num_in_queue = count_num(queue);
     int num_in_queueForPQ = count_num(queueForPQ);
-    
+    if(num_in_queue == 0) {
+        table* temp_table = queueForPQ->recentTable->next;
+        for(int i = 1; i <= 15; i++) {
+            temp_table->name = "";
+            temp_table->age = 0;
+            temp_table = temp_table->next;
+        }
+        return;
+    }
     table* temp_queueForPQ = queueForPQ->recentTable->next;
     for(int i = 1; i <= num_in_queueForPQ; i++) {
         int count = 0;
@@ -734,49 +776,88 @@ void rewriteRes(restaurant* queue, restaurant* queueForPQ) {
         }
         temp_queueForPQ = temp_queueForPQ->next;
     }
-
-    table* temp = queueForPQ->recentTable->next;
-    for(int i = 1; i < num_in_queueForPQ; i++) {
-        if(temp->age != 0) {
-            temp = temp->next;
-        }
-        else {
-            temp->name = temp->next->name;
-            temp->age = temp->next->age;
-
-            temp->next->name = "";
-            temp->next->age = 0;
-
-            temp = temp->next;
-        }
-    }
-
-
+    updatePQ(queueForPQ);
 }
 
-void sortSameAge(restaurant* q, int waiting) {
-    table* temp_table = q->recentTable->next;
-    int min_index = temp_table->ID;
+bool checkDuplicateAge(restaurant* q, int AGE) {
+    table* temp = q->recentTable->next;
+    int waiting = count_num(q);
+    int count = 0;
     for(int i = 1; i <= waiting; i++) {
-        
-        table* var_table = temp_table->next;
-        table* forswap = temp_table;
-        for(int j = i + 1; j <= waiting; j++) {
-            if(var_table->age == temp_table->age && var_table->ID < temp_table->ID) min_index = var_table->ID;
-            var_table = var_table->next;
-        }
-        for(int i = 1; i <= waiting; i++) {
-            if(forswap->ID == min_index) {
-                swapInfo(forswap, temp_table);
-                break;
-            }
-            forswap = forswap->next;
+        if(temp->age == AGE) count++;
+        temp = temp->next;
+    }
+    if(count > 1) return 1;
+    else return 0;
+}
+
+void pushSameAge(restaurant* q, restaurant* tempForSQ) {
+    int waiting = count_num(q);
+    // copy queue to queue
+    table* temp_table = q->recentTable->next;
+    table* var_table = tempForSQ->recentTable->next;
+    for(int i = 1; i <= waiting; i++) {
+        var_table->name = temp_table->name;
+        var_table->age = temp_table->age;
+        temp_table = temp_table->next;
+        var_table = var_table->next;
+    }
+
+    // keep duplicated age customers
+    temp_table = tempForSQ->recentTable->next;
+    for(int i = 1; i <= waiting; i++) {
+        int count = checkDuplicateAge(tempForSQ, temp_table->age);
+        if(count == 0) {
+            temp_table->age = 0;
+            temp_table->name = "";
         }
         temp_table = temp_table->next;
     }
+    updatePQ(tempForSQ);
+
+
+    temp_table = nullptr;
+    var_table = nullptr;
+    delete temp_table;
+    delete var_table;
 }
 
-void SQ(restaurant* q, restaurant* queueForPQ, int NUM) {
+
+void delNameAfterSort(restaurant* q, restaurant* tempforsq) {
+    table* temp = tempforsq->recentTable->next;
+    int count = count_num(tempforsq);
+    for(int i = 1; i <= count; i++) {
+        table* var = q->recentTable->next;
+        for(int i = 1; i <= 15; i++) {
+            if(var->age == temp->age) var->name = "";
+            var = var->next;
+        }
+        temp = temp->next;
+    }
+    temp = nullptr;
+    delete temp;
+}
+
+void addNameAgain(restaurant* q, restaurant* tempforsq) {
+    table* temp = tempforsq->recentTable->next;
+    int count = count_num(tempforsq);
+    for(int i = 1; i <= count; i++) {
+        table* var = q->recentTable->next;
+        for(int i = 1; i <= 15; i++) {
+            if(var->age == temp->age && var->name == "") {
+                var->name = temp->name;
+                break;
+            }
+            var = var->next;
+        }
+        temp = temp->next;
+    }
+
+    temp = nullptr;
+    delete temp;
+}
+void SQ(restaurant* q, restaurant* queueForPQ, restaurant* tempForSQ, int NUM) {
+    pushSameAge(q,tempForSQ);
     rewriteRes(q, queueForPQ);
     int waiting = count_num(q);
     // case 1: no customer in queue -> print line "empty"
@@ -797,9 +878,8 @@ void SQ(restaurant* q, restaurant* queueForPQ, int NUM) {
     }
     //case 3: sort all the customer in queue 
     else if(NUM > waiting && NUM <= MAXSIZE) {
-        cout << "dang sort ca dong" << endl;
         table* flag = q->recentTable->next;   
-        for(int i = 1; i <= waiting; i++) {
+        for(int i = 1; i < waiting; i++) {
             table* var = flag;
             table* current = flag->next; 
             for(int j = i + 1; j <= waiting; j++) {
@@ -810,18 +890,13 @@ void SQ(restaurant* q, restaurant* queueForPQ, int NUM) {
             flag = flag->next;
         }
     }
+    delNameAfterSort(q,tempForSQ);
+    addNameAgain(q,tempForSQ);
 
-    sortSameAge(q, waiting);
-    table* print = q->recentTable->next;
-    for(int i = 1; i <= 15; i++) {
-        print->ID = i;
-        print = print->next;
-    }
-
-    print = q->recentTable->next;
+    table* forprint = q->recentTable->next;
     for(int i = 1; i <= waiting; i++) {
-        cout << print->name << "\n";
-        print = print->next;
+        cout << forprint->name << "\n";
+        forprint = forprint->next;
     }
 }
 /*===================================================================================*/
@@ -857,6 +932,11 @@ void simulate(string filename, restaurant* r)
         queueForPQ->recentTable = queueForPQ->insert(queueForPQ->recentTable,i,"",0);
     }
 
+    restaurant* tempForSQ = new restaurant();
+    for (int i = 1; i <= MAXSIZE; i++)
+    {
+        tempForSQ->recentTable = tempForSQ->insert(tempForSQ->recentTable,i,"",0);
+    }
     // initialize a word to read file
     string line;
     while(!input_file.eof()) {
@@ -957,7 +1037,7 @@ void simulate(string filename, restaurant* r)
                 if(checkInt(str_NUM)) {
                     int NUM = stoi(str_NUM);
                     if(NUM >= 1 && NUM <= MAXSIZE) {
-                        SQ(q, queueForPQ, NUM);
+                        SQ(q, queueForPQ, tempForSQ, NUM);
                     }
                 }
             }
@@ -965,20 +1045,22 @@ void simulate(string filename, restaurant* r)
         }
         else continue;
     }
-    table* temp = r->recentTable->next;
-    table* var = q->recentTable->next;
-    for(int i = 1; i <= 15; i++) {
-        cout << "NAME: " << temp->name << " " << "AGE: " << temp->age << " " << " ID: " << temp->ID << "\t\t||\t";
-        cout << "NAME: " << var->name << " " << "AGE: " << var->age << " " << " ID: " << var->ID << endl;
-        temp = temp->next;
-        var = var->next;
-    }
-    cout << "ban moi thay doi gan day la: " << update_changes->age << " " << update_changes->name << endl;
-    cout << count_num(r) <<  " "  << is_full(r) <<endl;
-    cout << count_num(q) <<  " "  << is_full(q) <<endl;
+    // table* temp = r->recentTable->next;
+    // table* var = q->recentTable->next;
+    // for(int i = 1; i <= 15; i++) {
+    //     cout << "NAME: " << temp->name << " " << "AGE: " << temp->age << " " << " ID: " << temp->ID << "\t\t||\t";
+    //     cout << "NAME: " << var->name << " " << "AGE: " << var->age << " " << " ID: " << var->ID << endl;
+    //     temp = temp->next;
+    //     var = var->next;
+    // }
+    // cout << "ban moi thay doi gan day la: " << update_changes->age << " " << update_changes->name << endl;
+    // cout << count_num(r) <<  " "  << is_full(r) <<endl;
+    // cout << count_num(q) <<  " "  << is_full(q) <<endl;
+
     delete q;
     delete queueForPS;
     delete update_changes;
     delete queueForPQ;
+    delete tempForSQ;
 
 }
