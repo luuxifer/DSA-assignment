@@ -216,26 +216,6 @@ public:
 /*===============================================================================================*/
 /*================================SECOND AREA--MOUNTAIN VIEW=====================================*/
 /*===============CREATE MOUNTAINVIEW-CHAIN-TABLE AS AN AVL TREE FOR THE CUSTOMERS================*/
-
-enum BalanceValue {
-    LH = -1,
-    EH = 0,
-    RH = 1
-};
-
-class Node {
-public:
-    int data;
-    int ID;
-    string name;
-    int num_Order;
-    Node *pLeft, *pRight;
-    BalanceValue balance;
-
-    Node(int value, int IDtable, string name, int num_Order) : data(value), ID(IDtable), name(name), num_Order(num_Order),pLeft(NULL), pRight(NULL), balance(EH) {}
-    ~Node() {}
-};
-
 void printNSpace(int n) {
     for (int i = 0; i < n - 1; i++) cout << " ";
 }
@@ -244,35 +224,143 @@ void printInteger(int &n) {
     cout << n << " ";
 }
 
-template<class T>
-class AVLTree
-{
-public:
-    class Node;
-    Node *root;
-protected:
-    int getHeightRec(Node *node) {
-        if (node == NULL)
-            return 0;
-        int lh = this->getHeightRec(node->pLeft);
-        int rh = this->getHeightRec(node->pRight);
-        return (lh > rh ? lh : rh) + 1;
+int compareStrings(string s1, string s2) {
+    int i = 0;
+    while (s1[i] != '\0' && s2[i] != '\0') {
+        if (s1[i] > s2[i]) {
+            return 1;
+        } else if (s1[i] < s2[i]) {
+            return -1;
+        }
+        i++;
     }
+    if (s1[i] == '\0' && s2[i] == '\0') {
+        return 0;
+    } else if (s1[i] == '\0') {
+        return -1;
+    } else {
+        return 1;
+    }
+}
+
+class AVLNode {
+public:
+    int result;
+    string name;
+    int ID;
+    int num_Order;
+    int height;
+    AVLNode* left;
+    AVLNode* right;
+    
+    AVLNode(int val, string name, int ID, int num_Order) : result(val), name(name), ID(ID), num_Order(num_Order), height(1), left(nullptr), right(nullptr) {}
+};
+
+class AVLTree {
+private:
+    AVLNode* root;
+    
+    int getHeight(AVLNode* node) {
+        if (node == nullptr) {
+            return 0;
+        }
+        return node->height;
+    }
+    
+    int getBalance(AVLNode* node) {
+        if (node == nullptr) {
+            return 0;
+        }
+        return getHeight(node->left) - getHeight(node->right);
+    }
+    
+    void updateHeight(AVLNode* node) {
+        node->height = std::max(getHeight(node->left), getHeight(node->right)) + 1;
+    }
+    
+    AVLNode* rotateRight(AVLNode* node) {
+        AVLNode* newRoot = node->left;
+        AVLNode* rightChild = newRoot->right;
+        newRoot->right = node;
+        node->left = rightChild;
+        updateHeight(node);
+        updateHeight(newRoot);
+        return newRoot;
+    }
+    
+    AVLNode* rotateLeft(AVLNode* node) {
+        AVLNode* newRoot = node->right;
+        AVLNode* leftChild = newRoot->left;
+        newRoot->left = node;
+        node->right = leftChild;
+        updateHeight(node);
+        updateHeight(newRoot);
+        return newRoot;
+    }
+    
+    AVLNode* balance(AVLNode* node) {
+        int balanceFactor = getBalance(node);
+        if (balanceFactor > 1) { // left-heavy
+            if (getBalance(node->left) < 0) {
+                node->left = rotateLeft(node->left);
+            }
+            return rotateRight(node);
+        } else if (balanceFactor < -1) { // right-heavy
+            if (getBalance(node->right) > 0) {
+                node->right = rotateRight(node->right);
+            }
+            return rotateLeft(node);
+        } else { // balanced
+            return node;
+        }
+    }
+    
+    AVLNode* insertHelper(AVLNode* node, int result, string name, int ID, int num_Orders) {
+        if (node == nullptr) {
+            return new AVLNode(result, name, ID, num_Orders);
+        }
+        if (result < node->result || (result == node->result && compareStrings(root->name, name) > 0)) {
+            node->left = insertHelper(node->left, result, name ,ID, num_Orders);
+        } else { // equal values go to the right
+            node->right = insertHelper(node->right, result, name , ID, num_Orders);
+        }
+        updateHeight(node);
+        return balance(node);
+    }
+    
+    void inorderTraversalHelper(AVLNode* node) {
+        if (node != nullptr) {
+            inorderTraversalHelper(node->left);
+            std::cout << node->result << " ";
+            inorderTraversalHelper(node->right);
+        }
+    }
+    
 public:
     AVLTree() : root(nullptr) {}
-    ~AVLTree(){}
-    int getHeight() {
-        return this->getHeightRec(this->root);
+    
+    void insert(int result, string name, int ID, int num_Orders) {
+        root = insertHelper(root, result, name, ID, num_Orders);
     }
+    
+    AVLNode* getRoot() {
+        return root;
+    }
+    
+    void inorderTraversal() {
+        inorderTraversalHelper(root);
+        std::cout << std::endl;
+    }
+
     void printTreeStructure() {
-        int height = this->getHeight();
+        int height = this->getHeight(root);
         if (this->root == NULL) {
             cout << "NULL\n";
             return;
         }
-        queue<Node *> q;
+        queue<AVLNode *> q;
         q.push(root);
-        Node *temp;
+        AVLNode *temp;
         int count = 0;
         int maxNode = 1;
         int level = 0;
@@ -287,9 +375,10 @@ public:
                 q.push(NULL);
             }
             else {
-                cout << temp->data<<" " <<temp->num_Order;
-                q.push(temp->pLeft);
-                q.push(temp->pRight);
+                // temp->data<<" " <<
+                cout <<temp->result;//<< " "<<temp->name;
+                q.push(temp->left);
+                q.push(temp->right);
             }
             printNSpace(space);
             count++;
@@ -305,202 +394,92 @@ public:
         }
     }
 
-/*####################################################################################################*/
-    // ADD a new customer with result and ID into AVL tree
-    int getIDforNode(int result) {
-        return result%32+1;
-    }
-    // left or right rotate depend on which kind of unbalanced tree
-    Node* rotateRight(Node* root) {
-        Node* temp=root->pLeft;
-        // right rotate
-        root->pLeft=temp->pRight;
-        temp->pRight=root;
-
-        return temp;
-    }
-    Node* rotateLeft(Node* root) {
-        Node* temp=root->pRight;
-        // left rotate
-        root->pRight=temp->pLeft;
-        temp->pLeft=root;
-
-        return temp;
-    }
-
-    // update balance state after each rotate 
-    Node* leftbalance(Node* root, bool &taller) {
-        Node* ltree=root->pLeft;
-        if (ltree->balance==LH) {
-            root=rotateRight(root);
-            root->balance=EH;
-            root->pRight->balance=EH;
-            taller=false;
+    AVLNode* remove(AVLNode* node, int result, string name) {
+        if (node == nullptr) {
+            return nullptr;
         }
-        else {
-            Node* rtree=ltree->pRight;
-            if (rtree->balance==LH) {
-                root->balance=RH;
-                ltree->balance=EH;
-            }
-            else if (rtree->balance==EH) {
-                ltree->balance=EH;
-                root->balance=EH;
-            }
-            else {
-                root->balance=EH;
-                ltree->balance=LH;
-            }
-            rtree->balance=EH;
-            root->pLeft=rotateLeft(ltree);
-            root=rotateRight(root);
-            taller=false;
-        }
-        return root;
-    }
+        if (result < node->result || (result == node->result && compareStrings(node->name, name) > 0)) {
+            node->left = remove(node->left, result, name);
+        } else if (result > node->result || (result == node->result && compareStrings(node->name, name) < 0)) {
+            node->right = remove(node->right, result, name);
+        } else {
+            AVLNode* temp;
+            if (node->left == nullptr || node->right == nullptr) {
+                temp = (node->left) ? node->left : node->right;
+                if (temp == NULL) {
+                    temp = node;
+                    node = NULL;
+                } else {
+                    *node = *temp;
+                }
+                delete temp;
+            } else {
+                temp = findMinNode(node->right);
+                node->name = temp->name;
+                node->ID = temp->ID;
+                node->result = temp->result;
+                node->num_Order = temp->num_Order;
 
-    Node* rightbalance(Node* root, bool &taller) {
-        Node* rtree=root->pRight;
-        if (rtree->balance==RH) {
-            root=rotateLeft(root);
-            root->balance=EH;
-            root->pLeft->balance=EH;
-            taller=false;
+                node->right = remove(node->right, temp->result,temp->name);
+            }
         }
-        else {
-            Node* ltree=rtree->pLeft;
-            if(ltree->balance==RH) {
-                root->balance=LH;
-                rtree->balance=EH;
-            }
-            else if (ltree->balance==EH) {
-                rtree->balance=EH;
-                root->balance=EH;
-            }
-            else {
-                root->balance=EH;
-                rtree->balance=RH;
-            }
-            ltree->balance=EH;
-            root->pRight=rotateRight(rtree);
-            root=rotateLeft(root);
-            taller=false;
-        }
-        return root;
-    }
+        if (node == NULL) return nullptr;
 
-    Node* insertAVL(Node*root, int value, int ID, string name, bool& taller) {
-       if(root==NULL) {
-            Node* temp=new Node(value, ID, name, 1);
-            root=temp;
-            taller=true;
-            root->balance=EH;
+        node->height = 1 + max(getHeight(node->left), getHeight(node->right));
+        int balance = getBalance(node);
+        if (balance > 1 && getBalance(node->left) >= 0) {
+            return rotateRight(node);
+        }
+        if (balance > 1 && getBalance(node->left) < 0) {
+            node->left = rotateLeft(node->left);
+            return rotateRight(node);
+        }
+        if (balance < -1 && getBalance(node->right) <= 0) {
+            return rotateLeft(node);
+        }
+        if (balance < -1 && getBalance(node->right) > 0) {
+            node->right = rotateRight(node->right);
+            return rotateLeft(node);
+        }
         
-            return root;
+        return node;
+    }
+    
+    AVLNode* findMinNode(AVLNode* node) {
+        AVLNode* current = node;
+        while (current->left != NULL) {
+            current = current->left;
         }
-        if (root->data>value) {
-            root->pLeft = insertAVL(root->pLeft, value, ID, name, taller);
-            if (taller) {
-                if (root->balance==LH) root=leftbalance(root, taller);
-                else if (root->balance==EH) root->balance=LH;
-                else {
-                    root->balance=EH;
-                    taller=false;
-                }
-            }
-        }
-        else {
-            root->pRight=insertAVL(root->pRight, value, ID, name, taller);
-            if (taller) {
-                if (root->balance==RH) root=rightbalance(root, taller);
-                else if (root->balance==EH) root->balance=RH;
-                else {
-                    root->balance=EH;
-                    taller=false;
-                }
-            }
-        }
-        return root;
+        return current;
     }
 
-    void insert(const T &value, T ID, string name) {
-        bool taller=false;
-        root=insertAVL(root,value,ID,name,taller);
-    }
-/*####################################################################################################*/
-
-/*####################################################################################################*/
-    // delete any customer while only know his/her ID table
-
-/*####################################################################################################*/
-    // Seach, print the AVL tree follow the rule
-    void printInorder(Node*temp) {
-        if(temp == nullptr) return;
-        else {
-            printInorder(temp->pLeft);
-            cout<<temp->data<<" ";
-            printInorder(temp->pRight);
-        }
-    }
-
-    void printInorder() {
-        Node*temp=root;
-        if(temp == nullptr) return;
-        else {
-            printInorder(temp);
-        }
-    }
-
-    bool find(const T &value, string name){
-        Node*temp=root;
-        while(temp != nullptr) {
-            if(temp->data==value) return 1;
-            if(value<temp->data) temp=temp->pLeft;
-            else temp=temp->pRight;
-        }
-        return 0;
-    }
-
-    void search(T result, string name) {
-        Node* temp = root;
-        while(temp != nullptr) {
-            if(temp->data==result) {
-                temp->num_Order++;
-                return;
-            }
-            if(result < temp->data) temp=temp->pLeft;
-            else temp=temp->pRight;
-        }
-        return;
-    }
-
-/*####################################################################################################*/
     // Some helpful function as count number of customers, queue is full?,...
-    int count(Node* root) {
+    int count(AVLNode* root) {
         if(root == nullptr) return 0;
-        int lh = count(root->pLeft);
-        int rh = count(root->pRight);
+        int lh = count(root->left);
+        int rh = count(root->right);
 
         return 1 + lh + rh;
     }
 
-    
-/*####################################################################################################*/
-    class Node
-    {
-    public:
-        T data;
-        T ID;
-        string name;
-        T num_Order;
-        Node *pLeft, *pRight;
-        BalanceValue balance;
-        friend class AVLTree<T>;
+    bool find(int result, string name){
+        AVLNode* temp = root;
+        while(temp != nullptr) {
+            if(temp->result == result && temp->name == name) return 1;
+            if(result < temp->result || (result == temp->result && compareStrings(root->name, name) > 0)) temp=temp->left;
+            else temp=temp->right;
+        }
+        return 0;
+    }
 
-    
-        Node(T value, T IDtable, string name, T num_Order) : data(value), ID(IDtable), name(name), num_Order(num_Order),pLeft(NULL), pRight(NULL), balance(EH) {}
-        ~Node() {}
-    };
+    void searchDuplicateOrder(int result, string name) {
+        AVLNode* temp = root;
+        while(temp != nullptr) {
+            if(temp->result == result && temp->name == name) temp->num_Order++;
+            if(result < temp->result || (result == temp->result && compareStrings(root->name, name) > 0)) temp=temp->left;
+            else temp=temp->right;
+        }
+    }
 };
 /*===============================================================================================*/
 /*===============================================================================================*/
@@ -515,12 +494,14 @@ public:
     string name;
     // result is the number we will have after huffman encoding
     int result;
+    int num_Order;
     table* next;
-    table(int ID, string name, int result, table* next)
+    table(int ID, string name, int result, int num_Order,table* next)
     {
         this->ID = ID;
         this->name = name;
         this->result = result;
+        this->num_Order = num_Order;
         this->next = next;
     }
 };
@@ -537,21 +518,21 @@ public:
     {
         delete recentTable;
     }
-    table* finsert(table *last, int ID, string name, int result)
+    table* finsert(table *last, int ID, string name, int result, int num_Order)
     {
         if (last != nullptr)
             return last;
-        table *temp = new table(ID, "", result, last);
+        table *temp = new table(ID, "", result, num_Order, last);
 
         last = temp;
         last->next = last;
         return last;
     }
-    table *insert(table *last, int ID, string name, int result)
+    table *insert(table *last, int ID, string name, int result, int num_Order)
     {
         if (last == NULL)
-            return finsert(last, ID, name, result);
-        table *temp = new table (ID, name, result, last->next);
+            return finsert(last, ID, name, result, num_Order);
+        table *temp = new table (ID, name, result, num_Order, last->next);
         last -> next = temp;
         last = temp;
         return last;
@@ -560,7 +541,7 @@ public:
     void printList(table *recentTable) {
         table* first = recentTable->next;
         for(int i = 0; i < MAXSIZE; i++) {
-            cout << "Name " << first->name << " result " << first->result << " ID " << first->ID << endl;
+            cout << "Name " << first->name << " result " << first->result << " ID " << first->ID << " num_Order: " << first->num_Order << endl;
             first=first->next;
         }
     }
@@ -570,7 +551,7 @@ public:
         table* first = recentTable->next;
         int count = 0;
         for(int i = 0; i < MAXSIZE; i++) {
-            if(first->result != 0) count++;
+            if(first->name != "") count++;
             first=first->next;
         }
         return (count==MAXSIZE);
@@ -580,7 +561,7 @@ public:
         table* first = recentTable->next;
         int count = 0;
         for(int i = 1; i <= MAXSIZE; i++) {
-            if(first->result != 0) count++;
+            if(first->name != "") count++;
             first=first->next;
         }
         return count;
@@ -609,7 +590,62 @@ public:
         }
         return 0;
     }
+
+    // method to add in FIFO queue
+    void addFiFo(string name) {
+        if(search(name) != 0) {
+            table* first = recentTable->next;
+            for(int i = 1; i <= MAXSIZE; i++) {
+                if(first->name == name) first->num_Order++;
+                first = first->next;
+            }
+        }
+        else {
+            table* temp = recentTable->next;
+            while(temp->name != "") temp = temp->next;
+            temp->name = name;
+            temp->num_Order = 1;
+        }
+    }
+
+    string getFirstName() {
+        table* temp = recentTable->next;
+        return temp->name;
+    }
+
+    int getFirstResult() {
+        table* temp = recentTable->next;
+        return temp->result;
+    }
 };
+
+////////////////////////////////////////////////////////////////////////////////////
+    string updateFIFOqueue(table* store, string new_customer) {
+        table* temp = store->next;
+        string name = temp->name;
+        for(int i = 1; i < MAXSIZE; i++) {
+            temp->name = temp->next->name;
+            temp->num_Order = temp->next->num_Order;
+
+            temp = temp->next;
+        }
+        temp->name = new_customer;
+        temp->num_Order = 1;
+
+        return name;
+    }
+
+    int updateStoreQueue(table* store, table* FIFOqueue, string new_name, int result) {
+        string kick = updateFIFOqueue(store, new_name);
+        table* temp = FIFOqueue->next;
+        while(temp->name != kick) temp = temp->next;
+
+        temp->name = new_name;
+        temp->result = result;
+        return temp->ID;
+    }
+
+
 /*===============================================================================================*/
 /*===============================================================================================*/
 
@@ -738,15 +774,17 @@ int getOPT(int result) {
     return result%3;
 }
 
-void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree<int>* mountainView, restaurant* storeQueue) {
+void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountainView, restaurant* storeQueue, restaurant* FIFOqueue) {
     int result = bin_to_dec(buildHuffmanTree(name));
     int ID = result % MAXSIZE + 1;
     int checkOrder = storeQueue->search(name);
     if(storeQueue->totalCustomer(storeQueue->recentTable) != 0 && checkOrder != 0) {
         if(seaView->search(result, name) != -1) seaView->arr[seaView->search(result, name)]->num_Order += 1;
         if(mountainView->find(result, name)) {
-            mountainView->search(result, name);
+            mountainView->searchDuplicateOrder(result, name);
         }
+
+        FIFOqueue->addFiFo(name);
     }
     else {
         // This brach use when reult % 2 == 1 mean they will seat in seaView queue and divide this case into four subcase 
@@ -754,16 +792,38 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree<int>* mou
             if(!storeQueue->isFull(storeQueue->recentTable)) {
                 int realID = storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
                 seaView->insertNode(result, name, realID, 1);
+
+                FIFOqueue->addFiFo(name);
             }
             else {
-                if(mountainView->count(mountainView->root) != 0) {
+                if(mountainView->count(mountainView->getRoot()) != 0) {
                     storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
-                    mountainView->insert(result, ID, name);
+                    mountainView->insert(result, name, ID, 1);
+
+                    FIFOqueue->addFiFo(name);
                 }
                 else {
                     int OPT = result % 3;
                     if(OPT == 0) {
+                        // get ID for the new customer 
+                        string kick_name = storeQueue->getFirstName();
+                        int kick_result = storeQueue->getFirstResult();
 
+                        int getID = updateStoreQueue(storeQueue->recentTable, FIFOqueue->recentTable, name, result);
+                        // get the name of the ealiest customer went to the restaurant 
+                        int result_kick_name = bin_to_dec(buildHuffmanTree(kick_name));
+                        int search_in_Hash = seaView->search(result_kick_name, kick_name);
+                        if(search_in_Hash != -1) {
+                            seaView->arr[search_in_Hash]->value = name;
+                            seaView->arr[search_in_Hash]->key = result_kick_name;
+                            seaView->arr[search_in_Hash]->num_Order = 1;
+                            seaView->arr[search_in_Hash]->ID = getID;
+                        }
+
+                        if(mountainView->find(kick_result, kick_name)) {
+                            mountainView->remove(mountainView->getRoot(), kick_result, kick_name);
+                            mountainView->insert(result, name, getID, 1);
+                        }
                     }
                     else if(OPT == 1) {
 
@@ -775,14 +835,18 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree<int>* mou
             }
         }
         else {
-            if(mountainView->count(mountainView->root) != (MAXSIZE/2)) {
+            if(mountainView->count(mountainView->getRoot()) != (MAXSIZE/2)) {
                 storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
-                mountainView->insert(result, ID, name);
+                mountainView->insert(result, name, ID, 1);
+
+                FIFOqueue->addFiFo(name);
             }
             else {
                 if(!storeQueue->isFull(storeQueue->recentTable)) {
                     int realID = storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
                     seaView->insertNode(result, name, realID, 1);
+
+                    FIFOqueue->addFiFo(name);
                 }
                 else {
 
@@ -799,18 +863,18 @@ void simulate(string filename)
     restaurant* storeQueue = new restaurant();
     for (int i = 1; i <= MAXSIZE; i++)
     {
-        storeQueue->recentTable = storeQueue->insert(storeQueue->recentTable,i,"",0);
+        storeQueue->recentTable = storeQueue->insert(storeQueue->recentTable,i,"",0,0);
     }
 
     // create queue to deal with the fully occupied situation
     restaurant* FIFOqueue = new restaurant();
     for (int i = 1; i <= MAXSIZE; i++)
     {
-        storeQueue->recentTable = storeQueue->insert(storeQueue->recentTable,i,"",0);
+        FIFOqueue->recentTable = FIFOqueue->insert(FIFOqueue->recentTable,i,"",0,0);
     }
     // Initialize some important data structure to use throughout the assignment2
     hashMap<int, string, int, int>* seaView = new hashMap<int, string, int, int>;
-    AVLTree<int>* mountainView = new AVLTree<int>;
+    AVLTree* mountainView = new AVLTree;
     
 	ifstream input_file("test.txt");
     if (!input_file.is_open()) {
@@ -859,21 +923,66 @@ void simulate(string filename)
 
     // cout << storeQueue->addNewCustomer(storeQueue->recentTable,33,"hihi") << endl;
     // storeQueue->printList(storeQueue->recentTable);
-    REG("tELYXTj",seaView,mountainView,storeQueue);
-REG("tELYXTj",seaView,mountainView,storeQueue);
-    REG("tELYXaaabb",seaView,mountainView,storeQueue);
-    REG("tELYXT",seaView,mountainView,storeQueue);
+    REG("tELYXTj",seaView,mountainView,storeQueue,FIFOqueue);
+    REG("tELYXTj",seaView,mountainView,storeQueue,FIFOqueue);
+    REG("tELYXTj",seaView,mountainView,storeQueue,FIFOqueue);
+    REG("tELYXTj",seaView,mountainView,storeQueue,FIFOqueue);
+    REG("tELYXaaabb",seaView,mountainView,storeQueue,FIFOqueue);
+    REG("tELYXT",seaView,mountainView,storeQueue,FIFOqueue);
+    REG("ETPtkkkkt",seaView,mountainView,storeQueue,FIFOqueue);
+    REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
+
+    mountainView->remove(mountainView->getRoot(), 2802, "tELYXTj");
+    // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
+    // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
     cout << storeQueue->search("tELYXTj") << endl;
     storeQueue->printList(storeQueue->recentTable);
-    cout << "==================================================================\n";
+    cout << "=================seaview===============================================\n";
     seaView->insertNode(33,"first",2,1);
     seaView->display();
-    cout << "==================================================================\n";
+    cout << "=================mountainview==========================================\n";
+
     mountainView->printTreeStructure();
-    cout << mountainView->count(mountainView->root);
-    cout << mountainView->count(mountainView->root);
+    cout << "=================fifoqueue==========================================\n";
+    FIFOqueue->printList(FIFOqueue->recentTable);
+
+
+    // cout << mountainView->count(mountainView->root);
+    // cout << mountainView->count(mountainView->root);
     // storeQueue->printList(storeQueue->recentTable);
     // cout << storeQueue->totalCustomer(storeQueue->recentTable)<<endl;
     // cout<< seaView->search(bin_to_dec(buildHuffmanTree("tELYXTj")),"tELYXTj")<<endl;
-    
+    // FIFOqueue->addFiFo("1");
+    // FIFOqueue->addFiFo("2");
+    // FIFOqueue->addFiFo("3");
+    // FIFOqueue->addFiFo("4");
+    // FIFOqueue->addFiFo("5");
+    // FIFOqueue->addFiFo("6");
+    // FIFOqueue->addFiFo("7");
+    // FIFOqueue->addFiFo("8");
+    // FIFOqueue->addFiFo("9");
+    // FIFOqueue->addFiFo("10");
+    // FIFOqueue->addFiFo("11");
+    // FIFOqueue->addFiFo("13");
+    // FIFOqueue->addFiFo("14");
+    // FIFOqueue->addFiFo("15");
+    // FIFOqueue->addFiFo("16");
+    // FIFOqueue->addFiFo("17");
+    // FIFOqueue->addFiFo("18");
+    // FIFOqueue->addFiFo("19");
+    // FIFOqueue->addFiFo("20");
+    // FIFOqueue->addFiFo("21");
+    // FIFOqueue->addFiFo("22");
+    // FIFOqueue->addFiFo("23");
+    // FIFOqueue->addFiFo("24");
+    // FIFOqueue->addFiFo("25");
+    // FIFOqueue->addFiFo("26");
+    // FIFOqueue->addFiFo("27");
+    // FIFOqueue->addFiFo("28");
+    // FIFOqueue->addFiFo("29");
+    // FIFOqueue->addFiFo("30");
+    // FIFOqueue->addFiFo("31");
+    // FIFOqueue->addFiFo("32");
+    // FIFOqueue->addFiFo("33");
+    // cout << FIFOqueue->totalCustomer(FIFOqueue->recentTable) << " " << FIFOqueue->isFull(FIFOqueue->recentTable);
 }
