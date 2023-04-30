@@ -331,7 +331,7 @@ private:
     void inorderTraversalHelper(AVLNode* node) {
         if (node != nullptr) {
             inorderTraversalHelper(node->left);
-            std::cout << node->result << " ";
+            cout << node->ID << "-" << node->result << "-" << node->num_Order << endl;
             inorderTraversalHelper(node->right);
         }
     }
@@ -349,7 +349,6 @@ public:
     
     void inorderTraversal() {
         inorderTraversalHelper(root);
-        std::cout << std::endl;
     }
 
     void printTreeStructure() {
@@ -568,16 +567,15 @@ public:
     }
 
     int addNewCustomer(table* recentable, int result, string name) {
-        if(isFull(recentable) == 0) {
             table* first = recentTable->next;
-            int ID = result%MAXSIZE + 1;
-            while(first->ID != ID) first = first->next;
-            while(first->result != 0 && first->name != "") first = first->next;
+            int getID = result%MAXSIZE + 1;
+            while(first->ID != getID) first = first->next;
+            while(first->name != "") first = first->next;
+
             first->name = name;
             first->result = result;
+
             return first->ID;
-        }
-        else return 0;
     }
 
     int search(string name) {
@@ -646,6 +644,151 @@ public:
     }
 
 
+/*==================THIS IS LRCO QUEUE FOT OPT == 1==============================================*/
+class LRCOtable {
+public:
+    int result;
+    string name;
+    int not_order_n_times;
+    LRCOtable* next;
+
+    LRCOtable(int result, string name, int not_order_n_times, LRCOtable* next) {
+        this->name = name;
+        this->result = result;
+        this->not_order_n_times = not_order_n_times;
+        this->next = next;
+    } 
+
+};
+
+class LRCOqueue {
+public:
+    LRCOtable *recentTable;
+    LRCOqueue() {
+        recentTable = nullptr;
+    }
+    ~LRCOqueue() {
+        delete recentTable;
+    }
+
+    LRCOtable* finsert(LRCOtable *last, int result, string name, int not_order_n_times)
+    {
+        if (last != nullptr)
+            return last;
+        LRCOtable *temp = new LRCOtable(result, name, not_order_n_times, last);
+
+        last = temp;
+        last->next = last;
+        return last;
+    }
+    LRCOtable *insert(LRCOtable *last, int result, string name, int not_order_n_times)
+    {
+        if (last == NULL)
+            return finsert(last, result, name, not_order_n_times);
+        LRCOtable *temp = new LRCOtable (result, name, not_order_n_times, last->next);
+        last -> next = temp;
+        last = temp;
+        return last;
+    }
+
+    void printList() {
+        LRCOtable* first = recentTable->next;
+        for(int i = 0; i < 32; i++) {
+            cout << "Name " << first->name << " result " << first->result << " not order: " << first->not_order_n_times << endl;
+            first=first->next;
+        }
+    }
+
+    bool search(string name) {
+        LRCOtable* temp = recentTable->next;
+        for(int i = 1; i <= MAXSIZE; i++) {
+            if(temp->name == name) return 1;
+            temp = temp->next;
+        }
+        return 0;
+    }
+
+    void add_and_update(string name, int result) {
+        LRCOtable* temp = recentTable->next;
+        if(search(name)) {
+            for(int i = 1; i <= MAXSIZE; i++) {
+                if(temp->name != "") {
+                    if(temp->name == name) temp->not_order_n_times = 0;
+                    else temp->not_order_n_times++;
+                    temp = temp->next;
+                }
+            }
+        }
+        else {
+            while(temp->name != "") {
+                temp->not_order_n_times++;
+                temp = temp->next;
+            }
+            temp->name = name;
+            temp->result = result;
+            temp->not_order_n_times = 0;
+        }
+    }
+
+    int get_result_by_name(string name) {
+        LRCOtable* temp = recentTable->next;
+        while(temp->name != name ) temp = temp->next;
+        return temp->result;
+    }
+
+    string check_LRCO() {
+        LRCOtable* temp = recentTable->next;
+        int least_recently = 0;
+        string kick_name = "";
+        for(int i = 1; i <= MAXSIZE; i++) {
+            if(temp->not_order_n_times > least_recently) {
+                least_recently = temp->not_order_n_times;
+                kick_name = temp->name;
+            }
+            temp = temp->next;
+        }
+        return kick_name;
+    }
+
+    void update_LRCO_queue(string old_name, int new_result, string new_name) {
+        LRCOtable* temp = recentTable->next;
+        while(temp->name != old_name) temp = temp->next;
+        while(temp != recentTable) {
+            temp->name = temp->next->name;
+            temp->result = temp->next->result;
+            temp->not_order_n_times = temp->next->not_order_n_times;
+
+            temp = temp->next;
+        }
+        temp->name = new_name;
+        temp->result = new_result;
+        temp->not_order_n_times = 0;
+    }
+};
+
+int update_Other_queue(restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* LRqueue, string name, int result){
+    string kick_name = LRqueue->check_LRCO();
+    int kick_result = LRqueue->get_result_by_name(kick_name);
+    LRqueue->update_LRCO_queue(kick_name, result, name);
+
+    table* temp = FIFOqueue->recentTable->next;
+    while(temp->name != name) temp = temp->next;
+    while(temp != FIFOqueue->recentTable) {
+        temp->name = temp->next->name;
+        temp->num_Order = temp->next->num_Order;
+
+        temp = temp->next;
+    } 
+    temp->name = name;
+    temp->num_Order = 1;
+
+    table* flag = storeQueue->recentTable->next;
+    while(flag->name != name) flag = flag->next;
+    flag->name = name;
+    flag->result = result;
+
+    return flag->ID;
+}
 /*===============================================================================================*/
 /*===============================================================================================*/
 
@@ -774,7 +917,7 @@ int getOPT(int result) {
     return result%3;
 }
 
-void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountainView, restaurant* storeQueue, restaurant* FIFOqueue) {
+void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountainView, restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* lrco_queue) {
     int result = bin_to_dec(buildHuffmanTree(name));
     int ID = result % MAXSIZE + 1;
     int checkOrder = storeQueue->search(name);
@@ -785,6 +928,7 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
         }
 
         FIFOqueue->addFiFo(name);
+        lrco_queue->add_and_update(name, result);
     }
     else {
         // This brach use when reult % 2 == 1 mean they will seat in seaView queue and divide this case into four subcase 
@@ -794,6 +938,7 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                 seaView->insertNode(result, name, realID, 1);
 
                 FIFOqueue->addFiFo(name);
+                lrco_queue->add_and_update(name, result);
             }
             else {
                 if(mountainView->count(mountainView->getRoot()) != 0) {
@@ -801,6 +946,7 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                     mountainView->insert(result, name, ID, 1);
 
                     FIFOqueue->addFiFo(name);
+                    lrco_queue->add_and_update(name, result);
                 }
                 else {
                     int OPT = result % 3;
@@ -810,12 +956,11 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                         int kick_result = storeQueue->getFirstResult();
 
                         int getID = updateStoreQueue(storeQueue->recentTable, FIFOqueue->recentTable, name, result);
-                        // get the name of the ealiest customer went to the restaurant 
-                        int result_kick_name = bin_to_dec(buildHuffmanTree(kick_name));
-                        int search_in_Hash = seaView->search(result_kick_name, kick_name);
+
+                        int search_in_Hash = seaView->search(kick_result, kick_name);
                         if(search_in_Hash != -1) {
                             seaView->arr[search_in_Hash]->value = name;
-                            seaView->arr[search_in_Hash]->key = result_kick_name;
+                            seaView->arr[search_in_Hash]->key = result;
                             seaView->arr[search_in_Hash]->num_Order = 1;
                             seaView->arr[search_in_Hash]->ID = getID;
                         }
@@ -824,9 +969,25 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                             mountainView->remove(mountainView->getRoot(), kick_result, kick_name);
                             mountainView->insert(result, name, getID, 1);
                         }
+
+                        lrco_queue->update_LRCO_queue(kick_name, result, name);
                     }
                     else if(OPT == 1) {
+                        string kick_name = lrco_queue->check_LRCO();
+                        int kick_result = lrco_queue->get_result_by_name(kick_name);
+                        int getID = update_Other_queue(storeQueue, FIFOqueue, lrco_queue, name, result);
 
+                        int search_in_Hash = seaView->search(kick_result, kick_name);
+                        if(search_in_Hash != -1) {
+                            seaView->arr[search_in_Hash]->value = name;
+                            seaView->arr[search_in_Hash]->key = result;
+                            seaView->arr[search_in_Hash]->num_Order = 1;
+                            seaView->arr[search_in_Hash]->ID = getID;
+                        }
+                        if(mountainView->find(kick_result, kick_name)) {
+                            mountainView->remove(mountainView->getRoot(), kick_result, kick_name);
+                            mountainView->insert(result, name, getID, 1);
+                        }
                     }
                     else {
 
@@ -840,6 +1001,7 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                 mountainView->insert(result, name, ID, 1);
 
                 FIFOqueue->addFiFo(name);
+                lrco_queue->add_and_update(name, result);
             }
             else {
                 if(!storeQueue->isFull(storeQueue->recentTable)) {
@@ -847,6 +1009,7 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                     seaView->insertNode(result, name, realID, 1);
 
                     FIFOqueue->addFiFo(name);
+                    lrco_queue->add_and_update(name, result);
                 }
                 else {
 
@@ -858,6 +1021,30 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
 }
 /*===============================================================================================*/
 /*===============================================================================================*/
+
+/*================================================================================================================*/
+/*================================================REQUEST 3: PRINTHT==============================================*/
+//this function mean we need to print all the customer in the seaView-queue with the following form: "ID-Result-NUM/n"
+void PRINTHT(hashMap<int, string, int, int>* seaView) {
+    for(int i = 0; i < seaView->capacity; i++) {
+        if(seaView->arr[i] != nullptr && seaView->arr[i]->key != -1) {
+            cout << seaView->arr[i]->ID << "-" << seaView->arr[i]->key << "-" << seaView->arr[i]->num_Order << endl;
+        }
+    }
+}
+/*================================================================================================================*/
+/*================================================================================================================*/
+
+/*=========================================================================================================================*/
+/*================================================REQUEST 4: PRINTAVL======================================================*/
+// this function mean we need to print all the customer in the mountainView-queue with the following form: "ID-Result-NUM/n"
+void PRINTAVL(AVLTree* mountainView) {
+    mountainView->inorderTraversal();
+}
+/*=========================================================================================================================*/
+/*=========================================================================================================================*/
+
+
 void simulate(string filename)
 {
     restaurant* storeQueue = new restaurant();
@@ -876,6 +1063,12 @@ void simulate(string filename)
     hashMap<int, string, int, int>* seaView = new hashMap<int, string, int, int>;
     AVLTree* mountainView = new AVLTree;
     
+    LRCOqueue* lrco_queue = new LRCOqueue();
+    for (int i = 1; i <= 32; i++)
+    {
+        lrco_queue->recentTable = lrco_queue->insert(lrco_queue->recentTable,0,"",0);
+    }
+
 	ifstream input_file("test.txt");
     if (!input_file.is_open()) {
         return;
@@ -923,29 +1116,31 @@ void simulate(string filename)
 
     // cout << storeQueue->addNewCustomer(storeQueue->recentTable,33,"hihi") << endl;
     // storeQueue->printList(storeQueue->recentTable);
-    REG("tELYXTj",seaView,mountainView,storeQueue,FIFOqueue);
-    REG("tELYXTj",seaView,mountainView,storeQueue,FIFOqueue);
-    REG("tELYXTj",seaView,mountainView,storeQueue,FIFOqueue);
-    REG("tELYXTj",seaView,mountainView,storeQueue,FIFOqueue);
-    REG("tELYXaaabb",seaView,mountainView,storeQueue,FIFOqueue);
-    REG("tELYXT",seaView,mountainView,storeQueue,FIFOqueue);
-    REG("ETPtkkkkt",seaView,mountainView,storeQueue,FIFOqueue);
-    REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
+    REG("Johnuigfifbahjasbdfhjbasdhjf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
+    REG("iuasgfuigweibjaskdfbjksadf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
+    REG("iuiwehruihqwUIAGSIDiernbsandfb", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
+    REG("uiewhqruihqiuwerhnbdasnbfnmasd", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
+    REG("tELYXaaabb", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
+    REG("tELYXT", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
+    REG("ETPtkkkkt", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
+    REG("ETPtkttt", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
 
-    mountainView->remove(mountainView->getRoot(), 2802, "tELYXTj");
     // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
     // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
     cout << storeQueue->search("tELYXTj") << endl;
     storeQueue->printList(storeQueue->recentTable);
     cout << "=================seaview===============================================\n";
-    seaView->insertNode(33,"first",2,1);
     seaView->display();
     cout << "=================mountainview==========================================\n";
-
     mountainView->printTreeStructure();
     cout << "=================fifoqueue==========================================\n";
     FIFOqueue->printList(FIFOqueue->recentTable);
-
+    cout << "=================Lrcoqueue==========================================\n";
+    lrco_queue->printList();
+    cout << "=================hash==========================================\n";
+    PRINTHT(seaView);
+    cout << "=================hash==========================================\n";
+    PRINTAVL(mountainView);
 
     // cout << mountainView->count(mountainView->root);
     // cout << mountainView->count(mountainView->root);
