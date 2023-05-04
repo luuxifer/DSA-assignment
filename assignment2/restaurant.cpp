@@ -328,11 +328,12 @@ private:
         return balance(node);
     }
     
-    void inorderTraversalHelper(AVLNode* node) {
-        if (node != nullptr) {
-            inorderTraversalHelper(node->left);
+    void preorderTraversalHelper(AVLNode* node) {
+        if(node == nullptr) return;
+        else {
             cout << node->ID << "-" << node->result << "-" << node->num_Order << endl;
-            inorderTraversalHelper(node->right);
+            preorderTraversalHelper(node->left);
+            preorderTraversalHelper(node->right);
         }
     }
     
@@ -347,8 +348,8 @@ public:
         return root;
     }
     
-    void inorderTraversal() {
-        inorderTraversalHelper(root);
+    void preorderTraversal() {
+        preorderTraversalHelper(root);
     }
 
     void printTreeStructure() {
@@ -615,6 +616,38 @@ public:
         table* temp = recentTable->next;
         return temp->result;
     }
+
+    int getIDbyname(string name) {
+        table* first = recentTable->next;
+        for(int i = 1; i <= MAXSIZE; i++) {
+            if(first->name == name) {
+                return first->ID;
+            }
+            first = first->next;
+        }
+        return 0;
+    }
+
+    void update_OPT_2_store(string old_name, int new_result, string new_name) {
+        table* first = recentTable->next;
+        while(first->name != old_name) first = first->next;
+        first->name = new_name;
+        first->result = new_result;
+    }
+
+    void update_OPT_2_FIFO(string old_name, int new_result, string new_name) {
+        table* first = recentTable->next;
+        while(first->name != old_name) first = first->next;
+        while(first->ID != MAXSIZE) {
+            first->name =first->next->name;
+            first->num_Order = first->next->num_Order;
+
+            first = first->next;
+        }
+        first->name = new_name;
+        first->result = new_result;
+        first->num_Order = 1;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -642,6 +675,7 @@ public:
         temp->result = result;
         return temp->ID;
     }
+
 
 
 /*==================THIS IS LRCO QUEUE FOT OPT == 1==============================================*/
@@ -789,6 +823,137 @@ int update_Other_queue(restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue*
 
     return flag->ID;
 }
+
+/*=================================================THIS IS LFCO QUEUE FOR OPT == 2 ==============*/
+class LFCOtable {
+public:
+    int result;
+    string name;
+    int num_Orders;
+    int rank;
+
+    LFCOtable(int rank, int result, string name, int num_Orders): rank(rank), result(result), name(name), num_Orders(num_Orders) {}
+};
+
+class MinHeap {
+private:
+    vector<LFCOtable> heap;
+    int maxSize;
+
+    int parent(int i) { return (i - 1) / 2; }
+    int leftChild(int i) { return 2 * i + 1; }
+    int rightChild(int i) { return 2 * i + 2; }
+    bool hasLeftChild(int i) { return leftChild(i) < heap.size(); }
+    bool hasRightChild(int i) { return rightChild(i) < heap.size(); }
+
+    void heapifyUp(int i) {
+        if (i && (heap[parent(i)].num_Orders > heap[i].num_Orders || (heap[parent(i)].num_Orders == heap[i].num_Orders && heap[parent(i)].rank > heap[i].rank))) {
+            swap(heap[i], heap[parent(i)]);
+            heapifyUp(parent(i));
+        }
+    }
+
+    void heapifyDown(int i) {
+        int minIndex = i;
+        int l = leftChild(i);
+        int r = rightChild(i);
+        if (hasLeftChild(i) && (heap[l].num_Orders < heap[minIndex].num_Orders || (heap[l].num_Orders == heap[minIndex].num_Orders && heap[l].rank < heap[minIndex].rank))) {
+            minIndex = l;
+        }
+        if (hasRightChild(i) && (heap[r].num_Orders < heap[minIndex].num_Orders || ( heap[r].num_Orders == heap[minIndex].num_Orders && heap[r].rank < heap[minIndex].rank))) {
+            minIndex = r;
+        }
+        if (minIndex != i) {
+            swap(heap[i], heap[minIndex]);
+            heapifyDown(minIndex);
+        }
+    }
+
+public:
+    MinHeap(int maxSize) : maxSize(maxSize) {}
+
+    int getRank() {return heap.size()+1;}
+
+    void insert_if_not_full(LFCOtable value) {
+        if (heap.size() != maxSize) {
+            heap.push_back(value);
+            heapifyUp(heap.size() - 1);
+        }
+    }
+    //use to find and increase the num_order by 1 if its a duplicate order
+    void insert_if_duplicate(string name) {
+        int index = find(name);
+        int rank = heap[index].rank;
+        int result = heap[index].result;
+        string name_update = heap[index].name;
+        int num = heap[index].num_Orders;
+        remove_for_replace(name);
+        insert_if_not_full(LFCOtable(rank, result, name_update, ++num));
+    }
+
+    //use to find and increase the num_order by 1 if its a duplicate order
+    void remove_for_replace(string name) {
+        int index = find(name);
+        if (index != -1) {
+            heap[index] = heap[heap.size() - 1];
+            heap.pop_back();
+            if (index < heap.size()) {
+                heapifyDown(index);
+                heapifyUp(index);
+            }
+        }
+    }
+
+    int find(string name) {
+        for (int i = 0; i < heap.size(); i++) {
+            if (heap[i].name == name) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // solve conflict in case of OPT== 0 || == 1
+    void updateRank(int index) {
+        for(int i = 0; i < heap.size(); i++) {
+            if(heap[i].rank > index) heap[i].rank--;
+        }
+    }
+
+    void solve_conflict(string name) {
+        int index = find(name);
+        if (index != -1) {
+            heap[index] = heap[heap.size() - 1];
+            heap.pop_back();
+            if (index < heap.size()) {
+                heapifyDown(index);
+                heapifyUp(index);
+            }
+        }
+        updateRank(index);
+    }
+    // solve conflict in case of OPT==2
+    LFCOtable pop() {
+        if (heap.size() == 0) {
+            throw "Heap is empty";
+        }
+        LFCOtable min = heap[0];
+        heap[0] = heap.back();
+        heap.pop_back();
+        heapifyDown(0);
+
+        updateRank(min.rank);
+        return min;
+    }
+
+
+
+    void print() {
+        for (auto elem : heap) {
+            cout << "Rank: " << elem.rank << " " << elem.name  << ", NUM: " << elem.num_Orders << ", RESULT: " << elem.result << endl;
+        }
+    }
+};
 /*===============================================================================================*/
 /*===============================================================================================*/
 
@@ -917,36 +1082,54 @@ int getOPT(int result) {
     return result%3;
 }
 
-void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountainView, restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* lrco_queue) {
+void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountainView, restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* lrco_queue, MinHeap lfco_queue) {
     int result = bin_to_dec(buildHuffmanTree(name));
     int ID = result % MAXSIZE + 1;
     int checkOrder = storeQueue->search(name);
+    // if a customer is already sut in the restaurant and order another food, findthem and increase there num_orders by 1
     if(storeQueue->totalCustomer(storeQueue->recentTable) != 0 && checkOrder != 0) {
         if(seaView->search(result, name) != -1) seaView->arr[seaView->search(result, name)]->num_Order += 1;
         if(mountainView->find(result, name)) {
             mountainView->searchDuplicateOrder(result, name);
         }
 
+        // incre the num_order of each customer with specified name by 1
         FIFOqueue->addFiFo(name);
         lrco_queue->add_and_update(name, result);
+        lfco_queue.insert_if_duplicate(name);
+
+        
     }
+    // If this is the first time the customer go to the restaurant, add them into the restaurant follow the rule
     else {
         // This brach use when reult % 2 == 1 mean they will seat in seaView queue and divide this case into four subcase 
         if(result % 2 != 0) {
-            if(!storeQueue->isFull(storeQueue->recentTable)) {
+            // if the seaView queue is not full, add them to the seaViewQueue
+            if(!seaView->isFull()) {
+                // update the storeQueue after add a new customer
                 int realID = storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
                 seaView->insertNode(result, name, realID, 1);
-
+                
+                // add the customer to the FIFO queue
                 FIFOqueue->addFiFo(name);
+                // add the customer to the LRCOqueue
                 lrco_queue->add_and_update(name, result);
+                // add the customer to the LFCOqueue
+                lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
             }
             else {
+                // if the seaView queue is full but the mountainView isnt, add them to to mountainView queue
                 if(mountainView->count(mountainView->getRoot()) != 0) {
                     storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
                     mountainView->insert(result, name, ID, 1);
 
+                    // add the customer to the FIFO queue
                     FIFOqueue->addFiFo(name);
+                    // add the customer to the LRCOqueue
                     lrco_queue->add_and_update(name, result);
+                    // add the customer to the LFCOqueue
+                    lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
+                    
                 }
                 else {
                     int OPT = result % 3;
@@ -955,6 +1138,7 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                         string kick_name = storeQueue->getFirstName();
                         int kick_result = storeQueue->getFirstResult();
 
+                        // get earliest customer from FIFO queue to update other queue
                         int getID = updateStoreQueue(storeQueue->recentTable, FIFOqueue->recentTable, name, result);
 
                         int search_in_Hash = seaView->search(kick_result, kick_name);
@@ -971,10 +1155,16 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                         }
 
                         lrco_queue->update_LRCO_queue(kick_name, result, name);
+
+                        // update minheap-queue
+                        lfco_queue.solve_conflict(kick_name);
+                        lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
                     }
                     else if(OPT == 1) {
                         string kick_name = lrco_queue->check_LRCO();
                         int kick_result = lrco_queue->get_result_by_name(kick_name);
+
+                        // update 3 queues simutaneously
                         int getID = update_Other_queue(storeQueue, FIFOqueue, lrco_queue, name, result);
 
                         int search_in_Hash = seaView->search(kick_result, kick_name);
@@ -988,9 +1178,30 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                             mountainView->remove(mountainView->getRoot(), kick_result, kick_name);
                             mountainView->insert(result, name, getID, 1);
                         }
+
+                        // update minheap-queue
+                        lfco_queue.solve_conflict(kick_name);
+                        lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
                     }
                     else {
+                        LFCOtable kick_customer = lfco_queue.pop();
+                        int kick_ID = storeQueue->getIDbyname(kick_customer.name);
 
+                        int search_in_Hash = seaView->search(kick_customer.result, kick_customer.name);
+                        if(search_in_Hash != -1) {
+                            seaView->arr[search_in_Hash]->value = name;
+                            seaView->arr[search_in_Hash]->key = result;
+                            seaView->arr[search_in_Hash]->num_Order = 1;
+                            seaView->arr[search_in_Hash]->ID = kick_ID;
+                        }
+                        if(mountainView->find(kick_customer.result, kick_customer.name)) {
+                            mountainView->remove(mountainView->getRoot(), kick_customer.result, kick_customer.name);
+                            mountainView->insert(result, name, kick_ID, 1);
+                        }
+
+                        storeQueue->update_OPT_2_store(kick_customer.name, result, name);
+                        FIFOqueue->update_OPT_2_FIFO(kick_customer.name, result, name);
+                        lrco_queue->update_LRCO_queue(kick_customer.name, result, name);
                     }
                 }
             }
@@ -1000,30 +1211,65 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                 storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
                 mountainView->insert(result, name, ID, 1);
 
+                // add the customer to the FIFO queue
                 FIFOqueue->addFiFo(name);
+                // add the customer to the LRCOqueue
                 lrco_queue->add_and_update(name, result);
+                // add the customer to the LFCOqueue
+                lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
+        
             }
             else {
-                if(!storeQueue->isFull(storeQueue->recentTable)) {
+                if(!seaView->isFull()) {
                     int realID = storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
                     seaView->insertNode(result, name, realID, 1);
 
+                    // add the customer to the FIFO queue
                     FIFOqueue->addFiFo(name);
+                    // add the customer to the LRCOqueue
                     lrco_queue->add_and_update(name, result);
+                    // add the customer to the LFCOqueue
+                    lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
+                    
                 }
                 else {
+                    LFCOtable kick_customer = lfco_queue.pop();
+                        int kick_ID = storeQueue->getIDbyname(kick_customer.name);
 
+                        int search_in_Hash = seaView->search(kick_customer.result, kick_customer.name);
+                        if(search_in_Hash != -1) {
+                            seaView->arr[search_in_Hash]->value = name;
+                            seaView->arr[search_in_Hash]->key = result;
+                            seaView->arr[search_in_Hash]->num_Order = 1;
+                            seaView->arr[search_in_Hash]->ID = kick_ID;
+                        }
+                        if(mountainView->find(kick_customer.result, kick_customer.name)) {
+                            mountainView->remove(mountainView->getRoot(), kick_customer.result, kick_customer.name);
+                            mountainView->insert(result, name, kick_ID, 1);
+                        }
+
+                        storeQueue->update_OPT_2_store(kick_customer.name, result, name);
+                        FIFOqueue->update_OPT_2_FIFO(kick_customer.name, result, name);
+                        lrco_queue->update_LRCO_queue(kick_customer.name, result, name);
                 }
             }
         }
     }
     
 }
-/*===============================================================================================*/
-/*===============================================================================================*/
+/*================================================================================================================*/
+/*================================================================================================================*/
 
 /*================================================================================================================*/
-/*================================================REQUEST 3: PRINTHT==============================================*/
+/*============================================REQUEST 2: CLE======================================================*/
+void CLE(int NUM, hashMap<int, string, int, int>* seaView, AVLTree* mountainView, restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* lrco_queue, MinHeap lfco_queue) {
+    
+}
+/*================================================================================================================*/
+/*================================================================================================================*/
+
+/*================================================================================================================*/
+/*============================================REQUEST 3: PRINTHT==================================================*/
 //this function mean we need to print all the customer in the seaView-queue with the following form: "ID-Result-NUM/n"
 void PRINTHT(hashMap<int, string, int, int>* seaView) {
     for(int i = 0; i < seaView->capacity; i++) {
@@ -1039,7 +1285,7 @@ void PRINTHT(hashMap<int, string, int, int>* seaView) {
 /*================================================REQUEST 4: PRINTAVL======================================================*/
 // this function mean we need to print all the customer in the mountainView-queue with the following form: "ID-Result-NUM/n"
 void PRINTAVL(AVLTree* mountainView) {
-    mountainView->inorderTraversal();
+    mountainView->preorderTraversal();
 }
 /*=========================================================================================================================*/
 /*=========================================================================================================================*/
@@ -1069,6 +1315,8 @@ void simulate(string filename)
         lrco_queue->recentTable = lrco_queue->insert(lrco_queue->recentTable,0,"",0);
     }
 
+    MinHeap lfco_queue(32);
+
 	ifstream input_file("test.txt");
     if (!input_file.is_open()) {
         return;
@@ -1085,8 +1333,7 @@ void simulate(string filename)
         if(command == "REG") {// check some necessary condition before implement request 
             if(length == 2) {
                 string NAME = firstWord(removeFirst(newline));
-                string str_AGE = firstWord(removeFirst(removeFirst(newline)));
-                cout << NAME << " " << str_AGE << endl;
+                REG(NAME, seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
             }
             else continue;
         }
@@ -1103,10 +1350,10 @@ void simulate(string filename)
             else continue;
         }
         else if(command == "PrintHT") {// check some necessary condition before implement request 
-            cout << "printht\n";
+            PRINTHT(seaView);
         }
         else if(command == "PrintAVL") {// check some necessary condition before implement request 
-            cout << "printavl\n";
+            PRINTAVL(mountainView);
         }
         else if(command == "PrintMH") {// check some necessary condition before implement request 
             cout << "printmh\n";
@@ -1116,14 +1363,14 @@ void simulate(string filename)
 
     // cout << storeQueue->addNewCustomer(storeQueue->recentTable,33,"hihi") << endl;
     // storeQueue->printList(storeQueue->recentTable);
-    REG("Johnuigfifbahjasbdfhjbasdhjf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
-    REG("iuasgfuigweibjaskdfbjksadf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
-    REG("iuiwehruihqwUIAGSIDiernbsandfb", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
-    REG("uiewhqruihqiuwerhnbdasnbfnmasd", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
-    REG("tELYXaaabb", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
-    REG("tELYXT", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
-    REG("ETPtkkkkt", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
-    REG("ETPtkttt", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue);
+    // REG("Johnuigfifbahjasbdfhjbasdhjf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
+    // REG("iuasgfuigweibjaskdfbjksadf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
+    // REG("iuiwehruihqwUIAGSIDiernbsandfb", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
+    // REG("uiewhqruihqiuwerhnbdasnbfnmasd", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
+    // REG("tELYXaaabb", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
+    // REG("tELYXT", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
+    // REG("ETPtkkkkt", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
+    // REG("ODICkZbsPbOXEAqhjkwmfQEPvAPpIaiADgVPqQOvlcMPrRvTkSRtXESeBPLcOC", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
 
     // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
     // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
@@ -1180,4 +1427,7 @@ void simulate(string filename)
     // FIFOqueue->addFiFo("32");
     // FIFOqueue->addFiFo("33");
     // cout << FIFOqueue->totalCustomer(FIFOqueue->recentTable) << " " << FIFOqueue->isFull(FIFOqueue->recentTable);
+    delete storeQueue;
+    delete FIFOqueue;
+
 }
