@@ -1565,7 +1565,7 @@ void simulate(string filename)
 
     MinHeap lfco_queue(32);
 
-	ifstream input_file("test1.txt");
+	ifstream input_file("test2.txt");
     if (!input_file.is_open()) {
         return;
     }
@@ -1607,83 +1607,6 @@ void simulate(string filename)
         else continue;
     }
 
-    // cout << storeQueue->addNewCustomer(storeQueue->recentTable,33,"hihi") << endl;
-    // storeQueue->printList(storeQueue->recentTable);
-    //REG("Johnuigfifbahjasbdfhjbasdhjf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
-    // REG("iuasgfuigweibjaskdfbjksadf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
-    // REG("iuiwehruihqwUIAGSIDiernbsandfb", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
-    // REG("uiewhqruihqiuwerhnbdasnbfnmasd", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
-    // REG("tELYXaaabb", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
-    // REG("tELYXT", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
-    // REG("ETPtkkkkt", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
-    // REG("ODICkZbsPbOXEAqhjkwmfQEPvAPpIaiADgVPqQOvlcMPrRvTkSRtXESeBPLcOC", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
-    //uiewhqruihqiuwerhnbdasnbfnmasd result 28297
-
-
-    // CLE(-1, seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
-    // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
-    // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
-    // cout << storeQueue->search("tELYXTj") << endl;
-    // storeQueue->printList(storeQueue->recentTable);
-    // cout << "=================seaview===============================================\n";
-    // seaView->display();
-    // cout << "=================mountainview==========================================\n";
-    // //mountainView->printTreeStructure();
-    
-    // cout << "=================fifoqueue==========================================\n";
-    // FIFOqueue->printList(FIFOqueue->recentTable);
-    // cout << "=================Lrcoqueue==========================================\n";
-    // lrco_queue->printList();
-    // cout << "=================sea==========================================\n";
-    // PRINTHT(seaView);
-    // cout << "=================moutain==========================================\n";
-    // //PRINTAVL(mountainView);
-    // preOrder(mountainView);
-    // cout << "=================heap==========================================\n";
-    // //lfco_queue.insert_if_not_full(LFCOtable(1, 28297, "uiewhqruihqiuwerhnbdasnbfnmasd", 1));
-    // lfco_queue.print();
-
-
-
-
-    // cout << mountainView->count(mountainView->root);
-    // cout << mountainView->count(mountainView->root);
-    // storeQueue->printList(storeQueue->recentTable);
-    // cout << storeQueue->totalCustomer(storeQueue->recentTable)<<endl;
-    // cout<< seaView->search(bin_to_dec(buildHuffmanTree("tELYXTj")),"tELYXTj")<<endl;
-    // FIFOqueue->addFiFo("1");
-    // FIFOqueue->addFiFo("2");
-    // FIFOqueue->addFiFo("3");
-    // FIFOqueue->addFiFo("4");
-    // FIFOqueue->addFiFo("5");
-    // FIFOqueue->addFiFo("6");
-    // FIFOqueue->addFiFo("7");
-    // FIFOqueue->addFiFo("8");
-    // FIFOqueue->addFiFo("9");
-    // FIFOqueue->addFiFo("10");
-    // FIFOqueue->addFiFo("11");
-    // FIFOqueue->addFiFo("13");
-    // FIFOqueue->addFiFo("14");
-    // FIFOqueue->addFiFo("15");
-    // FIFOqueue->addFiFo("16");
-    // FIFOqueue->addFiFo("17");
-    // FIFOqueue->addFiFo("18");
-    // FIFOqueue->addFiFo("19");
-    // FIFOqueue->addFiFo("20");
-    // FIFOqueue->addFiFo("21");
-    // FIFOqueue->addFiFo("22");
-    // FIFOqueue->addFiFo("23");
-    // FIFOqueue->addFiFo("24");
-    // FIFOqueue->addFiFo("25");
-    // FIFOqueue->addFiFo("26");
-    // FIFOqueue->addFiFo("27");
-    // FIFOqueue->addFiFo("28");
-    // FIFOqueue->addFiFo("29");
-    // FIFOqueue->addFiFo("30");
-    // FIFOqueue->addFiFo("31");
-    // FIFOqueue->addFiFo("32");
-    // FIFOqueue->addFiFo("33");
-    // cout << FIFOqueue->totalCustomer(FIFOqueue->recentTable) << " " << FIFOqueue->isFull(FIFOqueue->recentTable);
     delete storeQueue;
     delete FIFOqueue;
     delete lrco_queue;
