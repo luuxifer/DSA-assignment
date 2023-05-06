@@ -139,19 +139,17 @@ public:
         arr[hashIndex] = temp;
     }
     // Method to delete a Node 
-    V deleteNode(K key) {
+    void deleteNode(K key) {
         int hashIndex = hashCode(key);
         // Delete and return the value of node
         while(arr[hashIndex] != nullptr) {
             if(arr[hashIndex]->key == key) {
-                hashNode<K, V, I, N>* temp = arr[hashIndex];
                 arr[hashIndex] = dummy;
                 size--;
-                return temp->value;
+                //return temp->value;
             }
             hashIndex = (hashIndex+1)%capacity;
         }
-        return nullptr;
     }
 
     // Method to get the value of Node if exist or return nullptr if none
@@ -243,244 +241,258 @@ int compareStrings(string s1, string s2) {
     }
 }
 
+// An AVL tree node
 class AVLNode {
 public:
-    int result;
-    string name;
+	int key;
+	string name;
     int ID;
     int num_Order;
-    int height;
-    AVLNode* left;
-    AVLNode* right;
-    
-    AVLNode(int val, string name, int ID, int num_Order) : result(val), name(name), ID(ID), num_Order(num_Order), height(1), left(nullptr), right(nullptr) {}
+	AVLNode *left;
+	AVLNode *right;
+	int height;
 };
 
-class AVLTree {
-private:
-    AVLNode* root;
-    
-    int getHeight(AVLNode* node) {
-        if (node == nullptr) {
-            return 0;
-        }
-        return node->height;
-    }
-    
-    int getBalance(AVLNode* node) {
-        if (node == nullptr) {
-            return 0;
-        }
-        return getHeight(node->left) - getHeight(node->right);
-    }
-    
-    void updateHeight(AVLNode* node) {
-        node->height = std::max(getHeight(node->left), getHeight(node->right)) + 1;
-    }
-    
-    AVLNode* rotateRight(AVLNode* node) {
-        AVLNode* newRoot = node->left;
-        AVLNode* rightChild = newRoot->right;
-        newRoot->right = node;
-        node->left = rightChild;
-        updateHeight(node);
-        updateHeight(newRoot);
-        return newRoot;
-    }
-    
-    AVLNode* rotateLeft(AVLNode* node) {
-        AVLNode* newRoot = node->right;
-        AVLNode* leftChild = newRoot->left;
-        newRoot->left = node;
-        node->right = leftChild;
-        updateHeight(node);
-        updateHeight(newRoot);
-        return newRoot;
-    }
-    
-    AVLNode* balance(AVLNode* node) {
-        int balanceFactor = getBalance(node);
-        if (balanceFactor > 1) { // left-heavy
-            if (getBalance(node->left) < 0) {
-                node->left = rotateLeft(node->left);
-            }
-            return rotateRight(node);
-        } else if (balanceFactor < -1) { // right-heavy
-            if (getBalance(node->right) > 0) {
-                node->right = rotateRight(node->right);
-            }
-            return rotateLeft(node);
-        } else { // balanced
-            return node;
-        }
-    }
-    
-    AVLNode* insertHelper(AVLNode* node, int result, string name, int ID, int num_Orders) {
-        if (node == nullptr) {
-            return new AVLNode(result, name, ID, num_Orders);
-        }
-        if (result < node->result || (result == node->result && compareStrings(root->name, name) > 0)) {
-            node->left = insertHelper(node->left, result, name ,ID, num_Orders);
-        } else { // equal values go to the right
-            node->right = insertHelper(node->right, result, name , ID, num_Orders);
-        }
-        updateHeight(node);
-        return balance(node);
-    }
-    
-    void preorderTraversalHelper(AVLNode* node) {
-        if(node == nullptr) return;
-        else {
-            cout << node->ID << "-" << node->result << "-" << node->num_Order << endl;
-            preorderTraversalHelper(node->left);
-            preorderTraversalHelper(node->right);
-        }
-    }
-    
-public:
-    AVLTree() : root(nullptr) {}
-    
-    void insert(int result, string name, int ID, int num_Orders) {
-        root = insertHelper(root, result, name, ID, num_Orders);
-    }
-    
-    AVLNode* getRoot() {
-        return root;
-    }
-    
-    void preorderTraversal() {
-        preorderTraversalHelper(root);
-    }
+// A utility function to get height
+// of the tree
+int height(AVLNode* N) {
+	if (N == NULL) return 0;
+	return N->height;
+}
 
-    void printTreeStructure() {
-        int height = this->getHeight(root);
-        if (this->root == NULL) {
-            cout << "NULL\n";
-            return;
-        }
-        queue<AVLNode *> q;
-        q.push(root);
-        AVLNode *temp;
-        int count = 0;
-        int maxNode = 1;
-        int level = 0;
-        int space = pow(2, height);
-        printNSpace(space / 2);
-        while (!q.empty()) {
-            temp = q.front();
-            q.pop();
-            if (temp == NULL) {
-                cout << " ";
-                q.push(NULL);
-                q.push(NULL);
-            }
-            else {
-                // temp->data<<" " <<
-                cout <<temp->result;//<< " "<<temp->name;
-                q.push(temp->left);
-                q.push(temp->right);
-            }
-            printNSpace(space);
-            count++;
-            if (count == maxNode) {
-                cout << endl;
-                count = 0;
-                maxNode *= 2;
-                level++;
-                space /= 2;
-                printNSpace(space / 2);
-            }
-            if (level == height) return;
-        }
-    }
+// A utility function to get maximum
+// of two integers
+int max(int a, int b) {
+	return (a > b)? a : b;
+}
 
-    AVLNode* remove(AVLNode* node, int result, string name) {
-        if (node == nullptr) {
-            return nullptr;
-        }
-        if (result < node->result || (result == node->result && compareStrings(node->name, name) > 0)) {
-            node->left = remove(node->left, result, name);
-        } else if (result > node->result || (result == node->result && compareStrings(node->name, name) < 0)) {
-            node->right = remove(node->right, result, name);
-        } else {
-            AVLNode* temp;
-            if (node->left == nullptr || node->right == nullptr) {
-                temp = (node->left) ? node->left : node->right;
-                if (temp == NULL) {
-                    temp = node;
-                    node = NULL;
-                } else {
-                    *node = *temp;
-                }
-                delete temp;
-            } else {
-                temp = findMinNode(node->right);
-                node->name = temp->name;
-                node->ID = temp->ID;
-                node->result = temp->result;
-                node->num_Order = temp->num_Order;
+/* Helper function that allocates a new node with the given key and NULLptr left and right pointers. */
+AVLNode* newNode(int key,string name,int ID,int num_Order) {
+	AVLNode* node = new AVLNode();
 
-                node->right = remove(node->right, temp->result,temp->name);
-            }
-        }
-        if (node == NULL) return nullptr;
+	node->key = key;
+	node->name = name;
+	node->ID = ID;
+	node->num_Order = num_Order;
+	node->left = NULL;
+	node->right = NULL;
+	node->height = 1; // new node is initially // added at leaf
 
-        node->height = 1 + max(getHeight(node->left), getHeight(node->right));
-        int balance = getBalance(node);
-        if (balance > 1 && getBalance(node->left) >= 0) {
-            return rotateRight(node);
-        }
-        if (balance > 1 && getBalance(node->left) < 0) {
-            node->left = rotateLeft(node->left);
-            return rotateRight(node);
-        }
-        if (balance < -1 && getBalance(node->right) <= 0) {
-            return rotateLeft(node);
-        }
-        if (balance < -1 && getBalance(node->right) > 0) {
-            node->right = rotateRight(node->right);
-            return rotateLeft(node);
-        }
-        
-        return node;
-    }
-    
-    AVLNode* findMinNode(AVLNode* node) {
-        AVLNode* current = node;
-        while (current->left != NULL) {
-            current = current->left;
-        }
-        return current;
-    }
+	return(node);
+}
 
-    // Some helpful function as count number of customers, queue is full?,...
-    int count(AVLNode* root) {
+// A utility function to right rotate subtree rooted with y See the diagram given above.
+AVLNode *rightRotate(AVLNode *y) {
+	AVLNode *x = y->left;
+	AVLNode *T2 = x->right;
+
+	// Perform rotation
+	x->right = y;
+	y->left = T2;
+
+	// Update heights
+	y->height = max(height(y->left),height(y->right)) + 1;
+	x->height = max(height(x->left),height(x->right)) + 1;
+
+	// Return new root
+	return x;
+}
+
+// A utility function to left rotate subtree rooted with x See the diagram given above.
+AVLNode *leftRotate(AVLNode *x) {
+	AVLNode *y = x->right;
+	AVLNode *T2 = y->left;
+
+	// Perform rotation
+	y->left = x;
+	x->right = T2;
+
+	// Update heights
+	x->height = max(height(x->left), height(x->right)) + 1;
+	y->height = max(height(y->left), height(y->right)) + 1;
+
+	// Return new root
+	return y;
+}
+
+// Get Balance factor of node N
+int getBalance(AVLNode *N)
+{
+	if (N == NULL) return 0;
+	return height(N->left) - height(N->right);
+}
+
+AVLNode* insert(AVLNode* node, int key,string name,int ID,int num_Order) {
+	/* 1. Perform the normal BST rotation */
+	if (node == NULL) return(newNode(key, name, ID, num_Order));
+
+	if (key < node->key) 
+		node->left = insert(node->left, key, name, ID, num_Order);
+	else if (key > node->key)
+		node->right = insert(node->right, key, name, ID, num_Order);
+	else // Equal keys not allowed
+		return node;
+
+	/* 2. Update height of this ancestor node */
+	node->height = 1 + max(height(node->left),
+						height(node->right));
+
+	/* 3. Get the balance factor of this
+		ancestor node to check whether
+		this node became unbalanced */
+	int balance = getBalance(node);
+
+	// If this node becomes unbalanced,
+	// then there are 4 cases
+
+	// Left Left Case
+	if (balance > 1 && key < node->left->key)
+		return rightRotate(node);
+
+	// Right Right Case
+	if (balance < -1 && key > node->right->key)
+		return leftRotate(node);
+
+	// Left Right Case
+	if (balance > 1 && key > node->left->key) {
+		node->left = leftRotate(node->left);
+		return rightRotate(node);
+	}
+
+	// Right Left Case
+	if (balance < -1 && key < node->right->key) {
+		node->right = rightRotate(node->right);
+		return leftRotate(node);
+	}
+
+	/* return the (unchanged) node pointer */
+	return node;
+}
+
+/* Given a non-empty binary search tree,
+return the node with minimum key value
+found in that tree. Note that the entire
+tree does not need to be searched. */
+AVLNode * minValueNode(AVLNode* node) {
+	AVLNode* current = node;
+	/* loop down to find the leftmost leaf */
+	while (current->left != NULL) current = current->left;
+	return current;
+}
+
+// Recursive function to delete a node with given key from subtree with given root. It returns root of the modified subtree.
+AVLNode* deleteNode(AVLNode* root, int key,string name) {
+	// STEP 1: PERFORM STANDARD BST DELETE
+	if (root == NULL) return root;
+
+	// If the key to be deleted is smaller than the root's key, then it lies in left subtree
+	if ( key < root->key )
+		root->left = deleteNode(root->left, key, name);
+
+	// If the key to be deleted is greater than the root's key, then it lies in right subtree
+	else if( key > root->key )
+		root->right = deleteNode(root->right, key, name);
+
+	// if key is same as root's key, then
+	// This is the node to be deleted
+	else {
+		// node with only one child or no child
+		if( (root->left == NULL) || (root->right == NULL) ) {
+			AVLNode *temp = root->left ? root->left : root->right;
+
+			// No child case
+			if (temp == NULL) {
+				temp = root;
+				root = NULL;
+			}
+			else // One child case
+			*root = *temp; // Copy the contents of the non-empty child
+			free(temp);
+		}
+		else {
+			// node with two children: Get the inorder successor (smallest in the right subtree)
+			AVLNode* temp = minValueNode(root->right);
+
+			// Copy the inorder successor's
+			// data to this node
+			root->key = temp->key;
+			root->name = temp->name;
+			root->ID = temp->ID;
+			root->num_Order = temp->num_Order;
+
+			// Delete the inorder successor
+			root->right = deleteNode(root->right, temp->key, temp->name);
+		}
+	}
+
+	// If the tree had only one node
+	// then return
+	if (root == NULL) return root;
+
+	// STEP 2: UPDATE HEIGHT OF THE CURRENT NODE
+	root->height = 1 + max(height(root->left), height(root->right));
+
+	// STEP 3: GET THE BALANCE FACTOR OF THIS NODE (to check whether this node became unbalanced)
+	int balance = getBalance(root);
+
+	// If this node becomes unbalanced, then there are 4 cases
+	// Left Left Case
+	if (balance > 1 && getBalance(root->left) >= 0) return rightRotate(root);
+
+	// Left Right Case
+	if (balance > 1 && getBalance(root->left) < 0) {
+		root->left = leftRotate(root->left);
+		return rightRotate(root);
+	}
+
+	// Right Right Case
+	if (balance < -1 && getBalance(root->right) <= 0) return leftRotate(root);
+
+	// Right Left Case
+	if (balance < -1 && getBalance(root->right) > 0) {
+		root->right = rightRotate(root->right);
+		return leftRotate(root);
+	}
+
+	return root;
+}
+
+// A utility function to print preorder traversal of the tree.
+// The function also prints height of every node
+void preOrder(AVLNode *root) {
+	if(root != NULL) {
+		cout << root->ID << "-" << root->key << "-" << root->num_Order << endl;
+		preOrder(root->left);
+		preOrder(root->right);
+	}
+}
+
+int count(AVLNode* root) {
         if(root == nullptr) return 0;
         int lh = count(root->left);
         int rh = count(root->right);
 
         return 1 + lh + rh;
-    }
+}
 
-    bool find(int result, string name){
+bool find_AVLNode(AVLNode* root , int result, string name){
+    AVLNode* temp = root;
+    while(temp != nullptr) {
+        if(temp->key == result && temp->name == name) return 1;
+        if(result < temp->key ) temp=temp->left;//|| (result == temp->result && compareStrings(root->name, name) > 0)
+        else temp=temp->right;
+    }
+    return 0;
+}
+
+void searchDuplicateOrder(AVLNode* root, int result, string name) {
         AVLNode* temp = root;
         while(temp != nullptr) {
-            if(temp->result == result && temp->name == name) return 1;
-            if(result < temp->result || (result == temp->result && compareStrings(root->name, name) > 0)) temp=temp->left;
-            else temp=temp->right;
-        }
-        return 0;
-    }
-
-    void searchDuplicateOrder(int result, string name) {
-        AVLNode* temp = root;
-        while(temp != nullptr) {
-            if(temp->result == result && temp->name == name) temp->num_Order++;
-            if(result < temp->result || (result == temp->result && compareStrings(root->name, name) > 0)) temp=temp->left;
+            if(temp->key == result && temp->name == name) temp->num_Order++;
+            if(result < temp->key ) temp=temp->left;//|| (result == temp->result && compareStrings(root->name, name) > 0)
             else temp=temp->right;
         }
     }
-};
 /*===============================================================================================*/
 /*===============================================================================================*/
 /*===============================================================================================*/
@@ -627,14 +639,14 @@ public:
         }
         return 0;
     }
-
+    // USE FOR REG FUNCTION
     void update_OPT_2_store(string old_name, int new_result, string new_name) {
         table* first = recentTable->next;
         while(first->name != old_name) first = first->next;
         first->name = new_name;
         first->result = new_result;
     }
-
+    // USE FOR REG FUNCTION
     void update_OPT_2_FIFO(string old_name, int new_result, string new_name) {
         table* first = recentTable->next;
         while(first->name != old_name) first = first->next;
@@ -647,6 +659,76 @@ public:
         first->name = new_name;
         first->result = new_result;
         first->num_Order = 1;
+    }
+
+    //USE FOR CLE FUNCTION
+    // find if the table with specified ID has a customer
+    bool find_by_ID(int NUM) {
+        table* temp = recentTable->next;
+        while(temp->ID != NUM) temp = temp->next;
+        if(temp->name != "") return 1;
+        return 0;
+    }
+
+    string find_name_by_ID(int NUM) {
+        table* temp = recentTable->next;
+        while(temp->ID != NUM) temp = temp->next;
+        return temp->name;
+    }
+
+    int find_result_by_ID(int NUM) {
+        table* temp = recentTable->next;
+        while(temp->ID != NUM) temp = temp->next;
+        return temp->result;
+    }
+
+    int find_result_by_name(string name) {
+        table* temp = recentTable->next;
+        while(temp->name != name) temp = temp->next;
+        return temp->result;
+    }
+
+    void store_queue_CLE(int NUM) {
+        table* temp = recentTable->next;
+        while(temp->ID != NUM) temp = temp->next;
+        temp->name = "";
+        temp->result = 0;
+    }
+
+    void store_queue_CLE(string name) {
+        table* temp = recentTable->next;
+        while(temp->name != name) temp = temp->next;
+        temp->name = "";
+        temp->result = 0;
+    }
+
+    void FIFO_queue_CLE(string name) {
+        table* temp = recentTable->next;
+        while(temp->name != name) temp = temp->next;
+        temp->name = "";
+        temp->num_Order = 0;
+        while(temp->ID != MAXSIZE) {
+            temp->name = temp->next->name;
+            temp->num_Order = temp->next->num_Order;
+
+            temp = temp->next;
+        }
+    }
+
+    // Use for cle all queue
+    string top_name() {
+        return recentTable->next->name;
+    }
+
+    int top_result() {
+        return recentTable->next->result;
+    }
+
+    void pop_first() {
+        table* temp = recentTable->next;
+        while(temp->ID != 32) {
+            
+        }
     }
 };
 
@@ -798,11 +880,23 @@ public:
         temp->result = new_result;
         temp->not_order_n_times = 0;
     }
+
+    // use for cle function
+    void lrco_queue_CLE(string name) {
+        LRCOtable* temp = recentTable->next;
+        while(temp->name != name) temp = temp->next;
+        while(temp != recentTable) {
+            temp->name = temp->next->name;
+            temp->result = temp->next->result;
+            temp->not_order_n_times = temp->next->not_order_n_times;
+
+            temp = temp->next;
+        }
+    }
 };
 
 int update_Other_queue(restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* LRqueue, string name, int result){
     string kick_name = LRqueue->check_LRCO();
-    int kick_result = LRqueue->get_result_by_name(kick_name);
     LRqueue->update_LRCO_queue(kick_name, result, name);
 
     table* temp = FIFOqueue->recentTable->next;
@@ -827,24 +921,26 @@ int update_Other_queue(restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue*
 /*=================================================THIS IS LFCO QUEUE FOR OPT == 2 ==============*/
 class LFCOtable {
 public:
+    int rank;
     int result;
     string name;
+    int ID;
     int num_Orders;
-    int rank;
+    
 
-    LFCOtable(int rank, int result, string name, int num_Orders): rank(rank), result(result), name(name), num_Orders(num_Orders) {}
+    LFCOtable(int rank, int result, string name, int ID,int num_Orders): rank(rank), result(result), name(name), ID(ID),num_Orders(num_Orders) {}
 };
 
 class MinHeap {
 private:
     vector<LFCOtable> heap;
-    int maxSize;
+    unsigned int maxSize;
 
     int parent(int i) { return (i - 1) / 2; }
     int leftChild(int i) { return 2 * i + 1; }
     int rightChild(int i) { return 2 * i + 2; }
-    bool hasLeftChild(int i) { return leftChild(i) < heap.size(); }
-    bool hasRightChild(int i) { return rightChild(i) < heap.size(); }
+    bool hasLeftChild(int i) { return unsigned(leftChild(i)) < heap.size(); }
+    bool hasRightChild(int i) { return unsigned(rightChild(i)) < heap.size(); }
 
     void heapifyUp(int i) {
         if (i && (heap[parent(i)].num_Orders > heap[i].num_Orders || (heap[parent(i)].num_Orders == heap[i].num_Orders && heap[parent(i)].rank > heap[i].rank))) {
@@ -886,9 +982,10 @@ public:
         int rank = heap[index].rank;
         int result = heap[index].result;
         string name_update = heap[index].name;
+        int ID = heap[index].ID;
         int num = heap[index].num_Orders;
         remove_for_replace(name);
-        insert_if_not_full(LFCOtable(rank, result, name_update, ++num));
+        insert_if_not_full(LFCOtable(rank, result, name_update, ID,++num));
     }
 
     //use to find and increase the num_order by 1 if its a duplicate order
@@ -897,7 +994,7 @@ public:
         if (index != -1) {
             heap[index] = heap[heap.size() - 1];
             heap.pop_back();
-            if (index < heap.size()) {
+            if (unsigned(index) < heap.size()) {
                 heapifyDown(index);
                 heapifyUp(index);
             }
@@ -905,7 +1002,7 @@ public:
     }
 
     int find(string name) {
-        for (int i = 0; i < heap.size(); i++) {
+        for (unsigned int i = 0; i < heap.size(); i++) {
             if (heap[i].name == name) {
                 return i;
             }
@@ -915,7 +1012,7 @@ public:
 
     // solve conflict in case of OPT== 0 || == 1
     void updateRank(int index) {
-        for(int i = 0; i < heap.size(); i++) {
+        for(unsigned int i = 0; i < heap.size(); i++) {
             if(heap[i].rank > index) heap[i].rank--;
         }
     }
@@ -925,7 +1022,7 @@ public:
         if (index != -1) {
             heap[index] = heap[heap.size() - 1];
             heap.pop_back();
-            if (index < heap.size()) {
+            if (unsigned(index) < heap.size()) {
                 heapifyDown(index);
                 heapifyUp(index);
             }
@@ -946,12 +1043,24 @@ public:
         return min;
     }
 
-
+    //USE FOR CLE FUNCTION
+    void lfco_queue_CLE(string name) {
+        solve_conflict(name);
+    }
 
     void print() {
         for (auto elem : heap) {
             cout << "Rank: " << elem.rank << " " << elem.name  << ", NUM: " << elem.num_Orders << ", RESULT: " << elem.result << endl;
         }
+    }
+
+    void preorder(int i = 0) {
+        if (unsigned(i) >= heap.size()) return;
+
+        cout << heap[i].ID << "-" << heap[i].num_Orders << endl;
+
+        preorder(leftChild(i));
+        preorder(rightChild(i));
     }
 };
 /*===============================================================================================*/
@@ -962,118 +1071,132 @@ public:
 /*=======================1. FIRST REQUEST - IMPLEMENT REG COMMAND================================*/
 // get ID for ID infomation 
 // A Tree node
-class huffNode{
+class HuffNode {
 public:
-	char ch;
-	int freq;
-	huffNode *left, *right;
+    char ch;
+    int pri;
+    int freq;
+    HuffNode* left;
+    HuffNode* right;
 };
 
-// Function to allocate a new tree node
-huffNode* getNode(char ch, int freq, huffNode* left, huffNode* right)
-{
-	huffNode* node = new huffNode();
-
-	node->ch = ch;
-	node->freq = freq;
-	node->left = left;
-	node->right = right;
-
-	return node;
+// Function to create a new node
+HuffNode* newNode(char ch, int freq, HuffNode* left, HuffNode* right) {
+    HuffNode* node = new HuffNode;
+    node->ch = ch;
+    node->pri = 0;
+    node->freq = freq;
+    node->left = left;
+    node->right = right;
+    return node;
 }
 
 // Comparison object to be used to order the heap
-class comp{
-public:
-	bool operator()(huffNode* l, huffNode* r)
-	{
-		// highest priority item has lowest frequency
-		return l->freq > r->freq;
-	}
+struct compare {
+    bool operator()(HuffNode* l, HuffNode* r) {
+        if(l->freq == r -> freq)
+        {
+            if(l->ch == r ->ch) return l->pri > r -> pri;
+            return l->ch > r->ch;
+        }
+        return l->freq > r->freq;
+    }
 };
 
-// traverse the Huffman Tree and store Huffman Codes
-// in a map.
-void encode(huffNode* root, string str,
-			unordered_map<char, string> &huffmanCode)
-{
-	if (root == nullptr)
-		return;
-
-	// found a leaf node
-	if (!root->left && !root->right) {
-		huffmanCode[root->ch] = str;
-	}
-
-	encode(root->left, str + "0", huffmanCode);
-	encode(root->right, str + "1", huffmanCode);
-}
-
-
-// Builds Huffman Tree and decode given input text
-string buildHuffmanTree(string text)
-{
-	// count frequency of appearance of each character
-	// and store it in a map
-	unordered_map<char, int> freq;
-	for (char ch: text) {
-		freq[ch]++;
-	}
-
-	// Create a priority queue to store live nodes of
-	// Huffman tree;
-	priority_queue<huffNode*, vector<huffNode*>, comp> pq;
-
-	// Create a leaf node for each character and add it
-	// to the priority queue.
-	for (auto pair: freq) {
-		pq.push(getNode(pair.first, pair.second, nullptr, nullptr));
-	}
-
-	// do till there is more than one node in the queue
-	while (pq.size() != 1)
-	{
-		// Remove the two nodes of highest priority
-		// (lowest frequency) from the queue
-		huffNode *left = pq.top(); pq.pop();
-		huffNode *right = pq.top();	pq.pop();
-
-		// Create a new internal node with these two nodes
-		// as children and with frequency equal to the sum
-		// of the two nodes' frequencies. Add the new node
-		// to the priority queue.
-		int sum = left->freq + right->freq;
-		pq.push(getNode('\0', sum, left, right));
-	}
-
-	// root stores pointer to root of Huffman Tree
-	huffNode* root = pq.top();
-
-	// traverse the Huffman Tree and store Huffman Codes
-	// in a map. Also prints them
-	unordered_map<char, string> huffmanCode;
-	encode(root, "", huffmanCode);
-	// print encoded string
-	string str = "";
-	for (char ch: text) {
-		str += huffmanCode[ch];
-	}
-    string str1= str.substr(str.size() - 15, 15);
-
-	return str1;
-}
-int bin_to_dec(string binaryStr) {
-    int decimalNum = 0;
-
-    // duyệt từng ký tự trong chuỗi
-    for (int i = 0; i < binaryStr.length(); i++) {
-        // tính giá trị của ký tự tại vị trí i
-        int digit = binaryStr[i] - '0';
-        // cộng vào giá trị thập phân
-        decimalNum += digit * pow(2, binaryStr.length() - i - 1);
+// Function to build the Huffman tree and return the root node
+HuffNode* buildHuffmanTree(map<char, int>& freqMap) {
+    priority_queue<HuffNode*, vector<HuffNode*>, compare> pq;
+    int prio = 0;
+    // Create a leaf node for each character and add it to the priority queue
+    for (auto& pair : freqMap) {
+        pq.push(newNode(pair.first, pair.second, nullptr, nullptr));
     }
-    return decimalNum;
+    if(pq.size() == 1)
+    {
+        HuffNode* right = pq.top();
+        pq.pop();
+        HuffNode* left = nullptr;
+        HuffNode* parent = newNode('}', right->freq, left, right);
+        pq.push(parent);
+        prio++;
+    }
+    // Repeat until there is only one node left in the priority queue
+    while (pq.size() > 1) {
+        // Remove the two nodes of highest priority
+        HuffNode* left = pq.top();
+        pq.pop();
+        HuffNode* right = pq.top(); 
+        pq.pop();
+
+        // Create a new internal node with the sum of the two highest frequencies
+        // Make the two removed nodes as left and right children of the new node
+        HuffNode* parent = newNode('}', left->freq + right->freq, left, right);
+        parent->pri = prio;
+        prio++;
+
+        // Add the new node to the priority queue
+        pq.push(parent);
+    }
+
+    // The remaining node is the root node of the Huffman tree
+    return pq.top();
 }
+
+// Function to traverse the Huffman tree and generate the codes
+void generateCodes(HuffNode* root, string code, map<char, string>& codeMap) {
+    if (root == nullptr) {
+        return;
+    }
+    // Leaf node
+    if (root->left == nullptr && root->right == nullptr) {
+        codeMap[root->ch] = code;
+    }
+
+    // Traverse left subtree
+    generateCodes(root->left, code + "0", codeMap);
+
+    // Traverse right subtree
+    generateCodes(root->right, code + "1", codeMap);
+}
+
+// Function to encode the input string using the Huffman codes
+string buildHuffmanTree(string name) {
+    map<char, int> freqMap;
+    for (char ch : name) {
+        freqMap[ch]++;
+    }
+
+    // Build the Huffman tree and get the root node
+    HuffNode* root = buildHuffmanTree(freqMap);
+
+    // Generate the Huffman codes for each character
+    map<char, string> codeMap;
+    generateCodes(root, "", codeMap);
+
+    // Encode the input string using the Huffman codes
+    string encodedStr = "";
+    for (char ch : name) {
+        encodedStr += codeMap[ch];
+    }
+	if(encodedStr.length() > 15)
+	{
+		encodedStr = encodedStr.substr(encodedStr.length() - 15, 15);
+	}
+    return encodedStr;
+}
+
+int bin_to_dec(string nameEncode) {
+	int num = 0;
+    int len = nameEncode.length();
+
+    for (int i = 0; i < len; i++) {
+        if (nameEncode[i] == '1') {
+            num += pow(2, len - 1 - i);
+        }
+    }
+    return num;
+}
+
 
 int getIDCustomer(int result) {
     return (result%MAXSIZE + 1);
@@ -1082,15 +1205,15 @@ int getOPT(int result) {
     return result%3;
 }
 
-void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountainView, restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* lrco_queue, MinHeap lfco_queue) {
+void REG(string name, hashMap<int, string, int, int>* seaView, AVLNode* &mountainView, restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* lrco_queue, MinHeap &lfco_queue) {
     int result = bin_to_dec(buildHuffmanTree(name));
-    int ID = result % MAXSIZE + 1;
+    //int ID = result % MAXSIZE + 1;
     int checkOrder = storeQueue->search(name);
     // if a customer is already sut in the restaurant and order another food, findthem and increase there num_orders by 1
     if(storeQueue->totalCustomer(storeQueue->recentTable) != 0 && checkOrder != 0) {
         if(seaView->search(result, name) != -1) seaView->arr[seaView->search(result, name)]->num_Order += 1;
-        if(mountainView->find(result, name)) {
-            mountainView->searchDuplicateOrder(result, name);
+        if(find_AVLNode( mountainView,result, name)) {
+            searchDuplicateOrder( mountainView,result, name);
         }
 
         // incre the num_order of each customer with specified name by 1
@@ -1115,20 +1238,20 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                 // add the customer to the LRCOqueue
                 lrco_queue->add_and_update(name, result);
                 // add the customer to the LFCOqueue
-                lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
+                lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, realID,1));
             }
             else {
                 // if the seaView queue is full but the mountainView isnt, add them to to mountainView queue
-                if(mountainView->count(mountainView->getRoot()) != 0) {
-                    storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
-                    mountainView->insert(result, name, ID, 1);
+                if(count(mountainView) != 0) {
+                    int realID = storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
+                    mountainView = insert(mountainView,result, name, realID, 1);
 
                     // add the customer to the FIFO queue
                     FIFOqueue->addFiFo(name);
                     // add the customer to the LRCOqueue
                     lrco_queue->add_and_update(name, result);
                     // add the customer to the LFCOqueue
-                    lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
+                    lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, realID, 1));
                     
                 }
                 else {
@@ -1139,6 +1262,7 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                         int kick_result = storeQueue->getFirstResult();
 
                         // get earliest customer from FIFO queue to update other queue
+                        //1,2
                         int getID = updateStoreQueue(storeQueue->recentTable, FIFOqueue->recentTable, name, result);
 
                         int search_in_Hash = seaView->search(kick_result, kick_name);
@@ -1149,22 +1273,23 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                             seaView->arr[search_in_Hash]->ID = getID;
                         }
 
-                        if(mountainView->find(kick_result, kick_name)) {
-                            mountainView->remove(mountainView->getRoot(), kick_result, kick_name);
-                            mountainView->insert(result, name, getID, 1);
+                        if(find_AVLNode(mountainView, kick_result, kick_name)) {
+                            deleteNode(mountainView, kick_result, kick_name);
+                            mountainView = insert(mountainView, result, name, getID, 1);
                         }
-
+                        //3
                         lrco_queue->update_LRCO_queue(kick_name, result, name);
-
+                        //4
                         // update minheap-queue
                         lfco_queue.solve_conflict(kick_name);
-                        lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
+                        lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, getID, 1));
                     }
                     else if(OPT == 1) {
                         string kick_name = lrco_queue->check_LRCO();
                         int kick_result = lrco_queue->get_result_by_name(kick_name);
 
                         // update 3 queues simutaneously
+                        //1,2,3
                         int getID = update_Other_queue(storeQueue, FIFOqueue, lrco_queue, name, result);
 
                         int search_in_Hash = seaView->search(kick_result, kick_name);
@@ -1174,16 +1299,17 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                             seaView->arr[search_in_Hash]->num_Order = 1;
                             seaView->arr[search_in_Hash]->ID = getID;
                         }
-                        if(mountainView->find(kick_result, kick_name)) {
-                            mountainView->remove(mountainView->getRoot(), kick_result, kick_name);
-                            mountainView->insert(result, name, getID, 1);
+                        if(find_AVLNode(mountainView, kick_result, kick_name)) {
+                            mountainView = deleteNode(mountainView, kick_result, kick_name);
+                            mountainView = insert(mountainView, result, name, getID, 1);
                         }
-
+                        //4
                         // update minheap-queue
                         lfco_queue.solve_conflict(kick_name);
-                        lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
+                        lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, getID, 1));
                     }
                     else {
+                        //1
                         LFCOtable kick_customer = lfco_queue.pop();
                         int kick_ID = storeQueue->getIDbyname(kick_customer.name);
 
@@ -1194,11 +1320,11 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                             seaView->arr[search_in_Hash]->num_Order = 1;
                             seaView->arr[search_in_Hash]->ID = kick_ID;
                         }
-                        if(mountainView->find(kick_customer.result, kick_customer.name)) {
-                            mountainView->remove(mountainView->getRoot(), kick_customer.result, kick_customer.name);
-                            mountainView->insert(result, name, kick_ID, 1);
+                        if(find_AVLNode(mountainView, kick_customer.result, kick_customer.name)) {
+                            mountainView = deleteNode(mountainView, kick_customer.result, kick_customer.name);
+                            mountainView = insert(mountainView, result, name, kick_ID, 1);
                         }
-
+                        //2,3,4
                         storeQueue->update_OPT_2_store(kick_customer.name, result, name);
                         FIFOqueue->update_OPT_2_FIFO(kick_customer.name, result, name);
                         lrco_queue->update_LRCO_queue(kick_customer.name, result, name);
@@ -1207,33 +1333,92 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
             }
         }
         else {
-            if(mountainView->count(mountainView->getRoot()) != (MAXSIZE/2)) {
-                storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
-                mountainView->insert(result, name, ID, 1);
+            if(count(mountainView) != (MAXSIZE/2)) {
+                //1
+                int realID = storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
+                mountainView = insert(mountainView, result, name, realID, 1);
 
+                //2,3,4
                 // add the customer to the FIFO queue
                 FIFOqueue->addFiFo(name);
                 // add the customer to the LRCOqueue
                 lrco_queue->add_and_update(name, result);
                 // add the customer to the LFCOqueue
-                lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
+                lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, realID,1));
         
             }
             else {
                 if(!seaView->isFull()) {
+                    //1
                     int realID = storeQueue->addNewCustomer(storeQueue->recentTable, result, name);
                     seaView->insertNode(result, name, realID, 1);
 
+                    //2,3,4
                     // add the customer to the FIFO queue
                     FIFOqueue->addFiFo(name);
                     // add the customer to the LRCOqueue
                     lrco_queue->add_and_update(name, result);
                     // add the customer to the LFCOqueue
-                    lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, 1));
+                    lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, realID, 1));
                     
                 }
                 else {
-                    LFCOtable kick_customer = lfco_queue.pop();
+                    int OPT = result % 3;
+                    if(OPT == 0) {
+                        // get ID for the new customer 
+                        string kick_name = storeQueue->getFirstName();
+                        int kick_result = storeQueue->getFirstResult();
+
+                        // get earliest customer from FIFO queue to update other queue
+                        //1,2
+                        int getID = updateStoreQueue(storeQueue->recentTable, FIFOqueue->recentTable, name, result);
+
+                        int search_in_Hash = seaView->search(kick_result, kick_name);
+                        if(search_in_Hash != -1) {
+                            seaView->arr[search_in_Hash]->value = name;
+                            seaView->arr[search_in_Hash]->key = result;
+                            seaView->arr[search_in_Hash]->num_Order = 1;
+                            seaView->arr[search_in_Hash]->ID = getID;
+                        }
+
+                        if(find_AVLNode(mountainView,kick_result, kick_name)) {
+                            mountainView = deleteNode(mountainView, kick_result, kick_name);
+                            mountainView = insert(mountainView, result, name, getID, 1);
+                        }
+                        //3
+                        lrco_queue->update_LRCO_queue(kick_name, result, name);
+                        //4
+                        // update minheap-queue
+                        lfco_queue.solve_conflict(kick_name);
+                        lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, getID, 1));
+                    }
+                    else if(OPT == 1) {
+                        string kick_name = lrco_queue->check_LRCO();
+                        int kick_result = lrco_queue->get_result_by_name(kick_name);
+
+                        // update 3 queues simutaneously
+                        //1,2,3
+                        int getID = update_Other_queue(storeQueue, FIFOqueue, lrco_queue, name, result);
+
+                        int search_in_Hash = seaView->search(kick_result, kick_name);
+                        if(search_in_Hash != -1) {
+                            seaView->arr[search_in_Hash]->value = name;
+                            seaView->arr[search_in_Hash]->key = result;
+                            seaView->arr[search_in_Hash]->num_Order = 1;
+                            seaView->arr[search_in_Hash]->ID = getID;
+                        }
+                        if(find_AVLNode(mountainView, kick_result, kick_name)) {
+                            mountainView = deleteNode(mountainView, kick_result, kick_name);
+                            mountainView = insert(mountainView, result, name, getID, 1);
+                        }
+                        //4
+                        // update minheap-queue
+                        lfco_queue.solve_conflict(kick_name);
+                        lfco_queue.insert_if_not_full(LFCOtable(lfco_queue.getRank(), result, name, getID, 1));
+                    }
+                    else {
+                        //1
+                        LFCOtable kick_customer = lfco_queue.pop();
                         int kick_ID = storeQueue->getIDbyname(kick_customer.name);
 
                         int search_in_Hash = seaView->search(kick_customer.result, kick_customer.name);
@@ -1243,14 +1428,15 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
                             seaView->arr[search_in_Hash]->num_Order = 1;
                             seaView->arr[search_in_Hash]->ID = kick_ID;
                         }
-                        if(mountainView->find(kick_customer.result, kick_customer.name)) {
-                            mountainView->remove(mountainView->getRoot(), kick_customer.result, kick_customer.name);
-                            mountainView->insert(result, name, kick_ID, 1);
+                        if(find_AVLNode(mountainView, kick_customer.result, kick_customer.name)) {
+                            mountainView = deleteNode(mountainView, kick_customer.result, kick_customer.name);
+                            mountainView = insert(mountainView,result, name, kick_ID, 1);
                         }
-
+                        //2,3,4
                         storeQueue->update_OPT_2_store(kick_customer.name, result, name);
                         FIFOqueue->update_OPT_2_FIFO(kick_customer.name, result, name);
                         lrco_queue->update_LRCO_queue(kick_customer.name, result, name);
+                    }
                 }
             }
         }
@@ -1262,8 +1448,61 @@ void REG(string name, hashMap<int, string, int, int>* seaView, AVLTree* mountain
 
 /*================================================================================================================*/
 /*============================================REQUEST 2: CLE======================================================*/
-void CLE(int NUM, hashMap<int, string, int, int>* seaView, AVLTree* mountainView, restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* lrco_queue, MinHeap lfco_queue) {
-    
+void CLE(int NUM, hashMap<int, string, int, int>* seaView, AVLNode* &mountainView, restaurant* storeQueue, restaurant* FIFOqueue, LRCOqueue* lrco_queue, MinHeap &lfco_queue) {
+    if(NUM < 1) {
+        int temp = 1;
+        while(seaView->getSize() > 0) {
+            string CLE_name = FIFOqueue->find_name_by_ID(temp);
+            int CLE_result = storeQueue->find_result_by_name(CLE_name);
+            if(seaView->search(CLE_result, CLE_name) != -1) {
+                storeQueue->store_queue_CLE(CLE_name);
+                FIFOqueue->FIFO_queue_CLE(CLE_name);
+                lrco_queue->lrco_queue_CLE(CLE_name);
+                lfco_queue.lfco_queue_CLE(CLE_name);
+                seaView->deleteNode(CLE_result);
+            }
+            else temp++;
+        }
+    }
+    else if(NUM > MAXSIZE) {
+        int temp = 1;
+        while(count(mountainView) > 0) {
+
+            string CLE_name = FIFOqueue->find_name_by_ID(temp);
+            int CLE_result = storeQueue->find_result_by_name(CLE_name);
+            cout << CLE_result << find_AVLNode(mountainView,CLE_result, CLE_name) << endl;
+            
+            if(find_AVLNode(mountainView,CLE_result, CLE_name)) {
+                storeQueue->store_queue_CLE(CLE_name);
+                FIFOqueue->FIFO_queue_CLE(CLE_name);
+                lrco_queue->lrco_queue_CLE(CLE_name);
+                lfco_queue.lfco_queue_CLE(CLE_name);
+                mountainView = deleteNode(mountainView, CLE_result, CLE_name);
+            }
+            else {
+                temp++;
+            }
+        }
+    }
+    else {
+        if(storeQueue->find_by_ID(NUM) == 1) {
+            string CLE_name = storeQueue->find_name_by_ID(NUM);
+            int CLE_result = storeQueue->find_result_by_ID(NUM);
+
+            storeQueue->store_queue_CLE(NUM);
+            FIFOqueue->FIFO_queue_CLE(CLE_name);
+            lrco_queue->lrco_queue_CLE(CLE_name);
+            lfco_queue.lfco_queue_CLE(CLE_name);
+            int find = seaView->search(CLE_result, CLE_name);
+            if(find != -1) {
+                seaView->deleteNode(CLE_result);
+            }
+            if(find_AVLNode(mountainView, CLE_result, CLE_name)) {
+                mountainView = deleteNode(mountainView, CLE_result, CLE_name);
+            }
+
+        } 
+    }
 }
 /*================================================================================================================*/
 /*================================================================================================================*/
@@ -1284,8 +1523,17 @@ void PRINTHT(hashMap<int, string, int, int>* seaView) {
 /*=========================================================================================================================*/
 /*================================================REQUEST 4: PRINTAVL======================================================*/
 // this function mean we need to print all the customer in the mountainView-queue with the following form: "ID-Result-NUM/n"
-void PRINTAVL(AVLTree* mountainView) {
-    mountainView->preorderTraversal();
+void PRINTAVL(AVLNode* &mountainView) {
+    preOrder(mountainView);
+}
+/*=========================================================================================================================*/
+/*=========================================================================================================================*/
+
+/*=========================================================================================================================*/
+/*================================================REQUEST 4: PRINTMH======================================================*/
+// this function mean we need to print all the customer in the mountainView-queue with the following form: "ID-Result-NUM/n"
+void PRINTMH(MinHeap &lfco_queue ) {
+    lfco_queue.preorder(0);
 }
 /*=========================================================================================================================*/
 /*=========================================================================================================================*/
@@ -1307,7 +1555,7 @@ void simulate(string filename)
     }
     // Initialize some important data structure to use throughout the assignment2
     hashMap<int, string, int, int>* seaView = new hashMap<int, string, int, int>;
-    AVLTree* mountainView = new AVLTree;
+    AVLNode* mountainView = nullptr;
     
     LRCOqueue* lrco_queue = new LRCOqueue();
     for (int i = 1; i <= 32; i++)
@@ -1317,7 +1565,7 @@ void simulate(string filename)
 
     MinHeap lfco_queue(32);
 
-	ifstream input_file("test.txt");
+	ifstream input_file("test1.txt");
     if (!input_file.is_open()) {
         return;
     }
@@ -1342,9 +1590,7 @@ void simulate(string filename)
                 string str_ID = firstWord(removeFirst(newline));
                 if(checkInt(str_ID)) {
                     int ID = stoi(str_ID);
-                    if(ID >= 1 && ID <= MAXSIZE) {
-                        cout << "cle" << ID << endl;
-                    }
+                    CLE(ID, seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
                 }
             }
             else continue;
@@ -1356,14 +1602,14 @@ void simulate(string filename)
             PRINTAVL(mountainView);
         }
         else if(command == "PrintMH") {// check some necessary condition before implement request 
-            cout << "printmh\n";
+            PRINTMH(lfco_queue);
         }
         else continue;
     }
 
     // cout << storeQueue->addNewCustomer(storeQueue->recentTable,33,"hihi") << endl;
     // storeQueue->printList(storeQueue->recentTable);
-    // REG("Johnuigfifbahjasbdfhjbasdhjf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
+    //REG("Johnuigfifbahjasbdfhjbasdhjf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
     // REG("iuasgfuigweibjaskdfbjksadf", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
     // REG("iuiwehruihqwUIAGSIDiernbsandfb", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
     // REG("uiewhqruihqiuwerhnbdasnbfnmasd", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
@@ -1371,23 +1617,34 @@ void simulate(string filename)
     // REG("tELYXT", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
     // REG("ETPtkkkkt", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
     // REG("ODICkZbsPbOXEAqhjkwmfQEPvAPpIaiADgVPqQOvlcMPrRvTkSRtXESeBPLcOC", seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
+    //uiewhqruihqiuwerhnbdasnbfnmasd result 28297
 
+
+    // CLE(-1, seaView, mountainView, storeQueue, FIFOqueue, lrco_queue,lfco_queue);
     // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
     // REG("ETPtkttt",seaView,mountainView,storeQueue,FIFOqueue);
-    cout << storeQueue->search("tELYXTj") << endl;
-    storeQueue->printList(storeQueue->recentTable);
-    cout << "=================seaview===============================================\n";
-    seaView->display();
-    cout << "=================mountainview==========================================\n";
-    mountainView->printTreeStructure();
-    cout << "=================fifoqueue==========================================\n";
-    FIFOqueue->printList(FIFOqueue->recentTable);
-    cout << "=================Lrcoqueue==========================================\n";
-    lrco_queue->printList();
-    cout << "=================hash==========================================\n";
-    PRINTHT(seaView);
-    cout << "=================hash==========================================\n";
-    PRINTAVL(mountainView);
+    // cout << storeQueue->search("tELYXTj") << endl;
+    // storeQueue->printList(storeQueue->recentTable);
+    // cout << "=================seaview===============================================\n";
+    // seaView->display();
+    // cout << "=================mountainview==========================================\n";
+    // //mountainView->printTreeStructure();
+    
+    // cout << "=================fifoqueue==========================================\n";
+    // FIFOqueue->printList(FIFOqueue->recentTable);
+    // cout << "=================Lrcoqueue==========================================\n";
+    // lrco_queue->printList();
+    // cout << "=================sea==========================================\n";
+    // PRINTHT(seaView);
+    // cout << "=================moutain==========================================\n";
+    // //PRINTAVL(mountainView);
+    // preOrder(mountainView);
+    // cout << "=================heap==========================================\n";
+    // //lfco_queue.insert_if_not_full(LFCOtable(1, 28297, "uiewhqruihqiuwerhnbdasnbfnmasd", 1));
+    // lfco_queue.print();
+
+
+
 
     // cout << mountainView->count(mountainView->root);
     // cout << mountainView->count(mountainView->root);
@@ -1429,5 +1686,6 @@ void simulate(string filename)
     // cout << FIFOqueue->totalCustomer(FIFOqueue->recentTable) << " " << FIFOqueue->isFull(FIFOqueue->recentTable);
     delete storeQueue;
     delete FIFOqueue;
+    delete lrco_queue;
 
 }
